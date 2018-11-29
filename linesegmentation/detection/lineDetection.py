@@ -6,6 +6,7 @@ from itertools import tee
 from dataclasses import dataclass
 import numpy as np
 from matplotlib import pyplot as plt
+from collections import defaultdict
 
 ### image specific imports
 from PIL import Image
@@ -210,30 +211,29 @@ class LineDetection:
         connectivity = 8
         output = cv2.connectedComponentsWithStats(img, connectivity)
 
-        ccList = []
-        ## Calculate the position of all CCs
-        for i in range(1,output[0]):
-            cc = np.argwhere(output[1]==i)
-            sortedCC = cc[cc[:,1].argsort()]
-            ccList.append(sortedCC.tolist())
-
         ## Normalize the CCs (line segments), so that the height of each cc is normalized to one pixel
         def normalize(point_list):
-            def insertIntoDict(key,value,aDict):
-                if not key in aDict:
-                    aDict[key] = [value]
-                else:
-                    aDict[key].append(value)
-            n_point_list = []
+            normalizedCC_list = []
             for cc in point_list:
-                staff = {}
+                ccdict = defaultdict(list)
                 for y, x in cc:
-                    insertIntoDict(x, y, staff)
-                staffs = []
-                for key, value in staff.items():
-                    staffs.append([int(np.floor(np.mean(value))), key])
-                n_point_list.append(staffs)
-            return n_point_list
+                    ccdict[x].append(y)
+                normalizedCC = []
+                for key, value in ccdict.items():
+                    normalizedCC.append([int(np.floor(np.mean(value) + 0.5)), key])
+                normalizedCC_list.append(normalizedCC)
+            return normalizedCC_list
+
+        ## Calculate the position, sort and normalize all CCs
+        ccdict = defaultdict(list)
+        indexdim0, indexdim1 = np.array(output[1]).nonzero()
+        points = list(zip(indexdim0, indexdim1))
+        for p in points:
+            y, x = p[0], p[1]
+            k = output[1][y][x]
+            ccdict[k].append([y,x])
+        ccList = list(ccdict.values())
+        [x.sort(key=operator.itemgetter(1)) for x in ccList]
         ccList = normalize(ccList)
 
         def connectCC(ccList, inplace = True):
@@ -456,7 +456,8 @@ class LineDetection:
                             prevLineh = lineh
                             x = False
                         else: break
-
+        else:
+             staffList = line_List
     ################# Debug ###################
         if (self.settings.debug):
             im = plt.imread(imageData.path)
