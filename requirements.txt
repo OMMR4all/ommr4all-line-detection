@@ -1,1 +1,9 @@
 numpy
+tensorflow_gpu
+scipy
+scikit-image
+tqdm
+opencv-python
+dataclasses
+pillow
+matplotlib

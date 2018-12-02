@@ -1,33 +1,38 @@
-### misc imports
-import sys, os, cv2, operator, tqdm, multiprocessing
-from functools import partial
-from typing import List, Generator, Optional
-from itertools import tee
-from dataclasses import dataclass
-import numpy as np
-from matplotlib import pyplot as plt
+# misc imports
+import cv2
+import multiprocessing
+import operator
+import os
+import tqdm
 from collections import defaultdict
+from dataclasses import dataclass
+from functools import partial
+from itertools import tee
+from typing import List, Generator
 
-### image specific imports
+import numpy as np
+# image specific imports
 from PIL import Image
-from scipy import misc
-from scipy.ndimage.morphology import binary_erosion, binary_dilation
-from scipy.interpolate import interp1d, interpolate
-
-### project specific imports
+from matplotlib import pyplot as plt
+# project specific imports
 from pagesegmentation.lib.predictor import PredictSettings
+from scipy.interpolate import interpolate
+from scipy.ndimage.morphology import binary_erosion, binary_dilation
+
+from linesegmentation.pixelclassifier.predictor import PCPredictor
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
-from linesegmentation.pixelclassifier.predictor import PCPredictor
+
 
 @dataclass
 class ImageData:
-        path: str = None
-        height: int = None
-        image: np.array = None
-        horizontalRunsImg: np.array = None
-        staffLineHeight: int = None
-        staffSpaceHeight: int = None
+    path: str = None
+    height: int = None
+    image: np.array = None
+    horizontal_runs_img: np.array = None
+    staff_line_height: int = None
+    staff_space_height: int = None
+
 
 @dataclass
 class LineDetectionSettings:
@@ -40,44 +45,46 @@ class LineDetectionSettings:
     model: Optional[str] = None
     processes: int = 12
 
-def createData(path, lineSpaceHeight):
-    spaceHeight = lineSpaceHeight
-    if lineSpaceHeight == 0:
-        spaceHeight = verticalRuns(binarize(np.array(Image.open(path)) / 255))[0]
-    imagedata = ImageData(path = path, height = spaceHeight)
-    return imagedata
 
-def verticalRuns(img: np.array):
+def create_data(path, line_space_height):
+    space_height = line_space_height
+    if line_space_height == 0:
+        space_height = vertical_runs(binarize(np.array(Image.open(path)) / 255))[0]
+    image_data = ImageData(path=path, height=space_height)
+    return image_data
+
+
+def vertical_runs(img: np.array):
     img = np.transpose(img)
     h = img.shape[0]
     w = img.shape[1]
     transitions = np.transpose(np.nonzero(np.diff(img)))
     white_runs = [0] * (w + 1)
     black_runs = [0] * (w + 1)
-    a,b = tee(transitions)
-    next(b,[])
-    for f,g in zip(a,b):
+    a, b = tee(transitions)
+    next(b, [])
+    for f, g in zip(a, b):
         if f[0] != g[0]:
             continue
         tlen = g[1] - f[1]
-        if img[f[0],f[1] + 1] == 1:
+        if img[f[0], f[1] + 1] == 1:
             white_runs[tlen] += 1
         else:
             black_runs[tlen] += 1
 
     for y in range(h):
         x = 1
-        col = img[y,0]
-        while x < w and img[y,x] == col:
-            x+=1
+        col = img[y, 0]
+        while x < w and img[y, x] == col:
+            x += 1
         if col == 1:
             white_runs[x] += 1
         else:
             black_runs[x] += 1
 
-        x = w  - 2
-        col = img[y,w-1]
-        while x >= 0 and img[y,x] == col:
+        x = w - 2
+        col = img[y, w - 1]
+        while x >= 0 and img[y, x] == col:
             x -= 1
         if col == 1:
             white_runs[w - 1 - x] += 1
@@ -88,24 +95,26 @@ def verticalRuns(img: np.array):
     # --> skip the first elements of the array
     white_r = np.argmax(white_runs[black_r:]) + 1 + black_r
     img = np.transpose(img)
-    return white_r,black_r
+    return white_r, black_r
 
-def calculateHorizontalRuns(img: np.array, minLength: int):
-        h = img.shape[0]
-        w = img.shape[1]
-        npMatrix = np.zeros([h,w], dtype = np.uint8)
-        t = np.transpose(np.nonzero(np.diff(img) == -1))
-        for trans in t:
-            y,x = trans[0],trans[1] + 1
-            xo = x
-            rl = 0
-            while x < w and img[y,x] == 0:
-                x += 1
-            rl = x - xo
-            if rl >= minLength:
-                for x in range(xo,xo + rl):
-                    npMatrix[y,x] = 255
-        return npMatrix
+
+def calculate_horizontal_runs(img: np.array, min_length: int):
+    h = img.shape[0]
+    w = img.shape[1]
+    np_matrix = np.zeros([h, w], dtype=np.uint8)
+    t = np.transpose(np.nonzero(np.diff(img) == -1))
+    for trans in t:
+        y, x = trans[0], trans[1] + 1
+        xo = x
+        # rl = 0
+        while x < w and img[y, x] == 0:
+            x += 1
+        rl = x - xo
+        if rl >= min_length:
+            for x in range(xo, xo + rl):
+                np_matrix[y, x] = 255
+    return np_matrix
+
 
 class LineDetection:
     """Line detection class
@@ -118,6 +127,7 @@ class LineDetection:
         Necessary if the NN should be used for the binarisation
 
     """
+
     def __init__(self, settings: LineDetectionSettings):
         """Constructor of the LineDetection class
 
@@ -137,13 +147,13 @@ class LineDetection:
             )
             self.predictor = PCPredictor(pcsettings, settings.targetLineSpaceHeight)
 
-    def detect(self, imagePaths: List[str]) -> Generator[List[List[List[int]]], None, None]:
+    def detect(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
         """
         Function  to detect die stafflines in an image
 
         Parameters
         ----------
-        settings: List[str]
+        image_paths: List[str]
             Paths to the images, which should be processed
 
         Yields
@@ -169,311 +179,315 @@ class LineDetection:
                      ]    
         """
         if not self.settings.model:
-            return self.detectbasic(imagePaths)
+            return self.detect_basic(image_paths)
         else:
-            return self.detectNN(imagePaths)
+            return self.detect_advanced(image_paths)
 
-    def detectbasic(self, imagePaths: List[str]) -> Generator[List[List[List[int]]], None, None]:
-        for imgPath in imagePaths:
-            imageData = ImageData(path = imgPath)
-            imageData.image = np.array(Image.open(imgPath)) / 255
-            gray = imageData.image
-            if (np.sum(np.histogram(gray)[0][1:-2]) != 0):
-                gray = enhance(imageData.image)
+    def detect_basic(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
+        for img_path in image_paths:
+            image_data = ImageData(path=img_path)
+            image_data.image = np.array(Image.open(img_path)) / 255
+            gray = image_data.image
+            if np.sum(np.histogram(gray)[0][1:-2]) != 0:
+                gray = enhance(image_data.image)
             binary = binarize(gray)
             binarized = 1 - binary
             morph = binary_erosion(binarized, structure=np.full((5, 1), 1))
             morph = binary_dilation(morph, structure=np.full((5, 1), 1))
             staffs = (binarized ^ morph)
-            imageData.staffSpaceHeight, imageData.staffLineHeight = verticalRuns(binary)
-            imageData.horizontalRunsImg = calculateHorizontalRuns((1 - staffs), self.settings.minLength)
-            yield self.__detectStaffLines(imageData)
+            image_data.staff_space_height, image_data.staff_line_height = vertical_runs(binary)
+            image_data.horizontal_runs_img = calculate_horizontal_runs((1 - staffs), self.settings.minLength)
+            yield self.detect_staff_lines(image_data)
 
+    def detect_advanced(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
 
-
-    def detectNN(self, imagePaths: List[str]) -> Generator[List[List[List[int]]], None, None]:
-
-        # print('Preparing image data')
-        createDatap = partial(createData, lineSpaceHeight = self.settings.lineSpaceHeight)
-        with multiprocessing.Pool(processes = self.settings.processes) as p:
-            data = [v for v in tqdm.tqdm(p.imap(createDatap, imagePaths), total=len(imagePaths))]
+        create_data_partital = partial(create_data, lineSpaceHeight=self.settings.lineSpaceHeight)
+        with multiprocessing.Pool(processes=self.settings.processes) as p:
+            data = [v for v in tqdm.tqdm(p.imap(create_data_partital, image_paths), total=len(image_paths))]
 
         for i, pred in enumerate(self.predictor.predict(data)):
-            data[i].staffSpaceHeight, data[i].staffLineHeight = verticalRuns(1 - pred)
-            data[i].horizontalRunsImg = calculateHorizontalRuns((1 - (pred / 255)), self.settings.minLength)
-            yield self.__detectStaffLines(data[i])
+            data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - pred)
+            data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)), self.settings.minLength)
+            yield self.detect_staff_lines(data[i])
 
-    def __detectStaffLines(self, imageData: ImageData):
-        img = imageData.horizontalRunsImg
-        stafflineHeight = imageData.staffLineHeight
-        staffSpaceHeight = imageData.staffSpaceHeight
-
+    def detect_staff_lines(self, image_data: ImageData):
+        img = image_data.horizontal_runs_img
+        staff_line_height = image_data.staff_line_height
+        staff_space_height = image_data.staff_space_height
         connectivity = 8
         output = cv2.connectedComponentsWithStats(img, connectivity)
 
-        ## Normalize the CCs (line segments), so that the height of each cc is normalized to one pixel
+        # Normalize the CCs (line segments), so that the height of each cc is normalized to one pixel
         def normalize(point_list):
-            normalizedCC_list = []
+            normalized_cc_list = []
             for cc in point_list:
-                ccdict = defaultdict(list)
+                cc_dict = defaultdict(list)
                 for y, x in cc:
-                    ccdict[x].append(y)
-                normalizedCC = []
-                for key, value in ccdict.items():
-                    normalizedCC.append([int(np.floor(np.mean(value) + 0.5)), key])
-                normalizedCC_list.append(normalizedCC)
-            return normalizedCC_list
+                    cc_dict[x].append(y)
+                normalized_cc = []
+                for key, value in cc_dict.items():
+                    normalized_cc.append([int(np.floor(np.mean(value) + 0.5)), key])
+                normalized_cc_list.append(normalized_cc)
+            return normalized_cc_list
 
-        ## Calculate the position, sort and normalize all CCs
+        # Calculate the position, sort and normalize all CCs
         ccdict = defaultdict(list)
         indexdim0, indexdim1 = np.array(output[1]).nonzero()
         points = list(zip(indexdim0, indexdim1))
         for p in points:
-            y, x = p[0], p[1]
-            k = output[1][y][x]
-            ccdict[k].append([y,x])
-        ccList = list(ccdict.values())
-        [x.sort(key=operator.itemgetter(1)) for x in ccList]
-        ccList = normalize(ccList)
+            y_coord, x_coord = p[0], p[1]
+            k = output[1][y_coord][x_coord]
+            ccdict[k].append([y_coord, x_coord])
+        cc_list = list(ccdict.values())
+        [x.sort(key=operator.itemgetter(1)) for x in cc_list]
+        cc_list = normalize(cc_list)
 
-        def connectCC(ccList, inplace = True):
-            def pruneCC(cc, length):
-                ccList = []
-                for i in cc:
-                    if abs(i[0][1] - i[-1][1]) > length:
-                        ccList.append(i)
-                return ccList
-            def connect(max_dists: List[int], vert_dist: int, ccListcp):
+        def connect_cc(cc_list, inplace=True):
+            def prune_cc(cc_list, length):
+                pruned_cc_list = []
+                for cc in cc_list:
+                    if abs(cc[0][1] - cc[-1][1]) > length:
+                        pruned_cc_list.append(cc)
+                return pruned_cc_list
+
+            def connect(max_dists: List[int], vert_dist: int, cc_list):
                 for max_dist in max_dists:
                     i = 0
-                    while i < len(ccListcp):
-                        l1 = ccListcp[i]
+                    while i < len(cc_list):
+                        l1 = cc_list[i]
                         y1b, x1b = l1[0]
                         y1e, x1e = l1[-1]
 
                         found = False
-                        for i2 in range(i + 1,len(ccListcp)):
-                            l2 = ccListcp[i2]
+                        for i2 in range(i + 1, len(cc_list)):
+                            l2 = cc_list[i2]
                             y2b, x2b = l2[0]
                             y2e, x2e = l2[-1]
                             if x1e < x2b and x2b - x1e < max_dist:
-                                distance = x2b - x1e
                                 if np.abs(y1e - y2b) < vert_dist:
-                                    ccListcp[i] = l1 + l2
-                                    del ccListcp[i2]
+                                    cc_list[i] = l1 + l2
+                                    del cc_list[i2]
                                     found = True
                                     break
                             elif x2e < x1b and x1b - x2e < max_dist:
                                 if np.abs(y1b - y2e) < vert_dist:
-                                    ccListcp[i] = l2 + l1
-                                    del ccListcp[i2]
+                                    cc_list[i] = l2 + l1
+                                    del cc_list[i2]
                                     found = True
                                     break
                         if not found:
                             i += 1
-                    if (vert_dist == 2 and max_dist == 30):
-                        ccListcp = pruneCC(ccListcp, 10)
-                return ccListcp
-            ccListcp = ccList
+                    if vert_dist == 2 and max_dist == 30:
+                        cc_list = prune_cc(cc_list, 10)
+                return cc_list
 
-            if inplace != True:
-                ccListcp = ccList.copy()
+            cc_list_copy = cc_list
+
+            if not inplace:
+                cc_list_copy = cc_list.copy()
 
             for x in [[10, 30, 50, 100], [200, 300, 500]]:
-                for vert_dist in [2, stafflineHeight, staffSpaceHeight / 5 + stafflineHeight, staffSpaceHeight / 3 + stafflineHeight]:
-                    ccListcp = connect(x, vert_dist, ccListcp)
-            return ccListcp
+                for vert_dist in [2, staff_line_height, staff_space_height / 5 + staff_line_height,
+                                  staff_space_height / 3 + staff_line_height]:
+                    cc_list_copy = connect(x, vert_dist, cc_list_copy)
+            return cc_list_copy
 
-        line_List = connectCC(ccList)
-        ## Remove lines which are shorter than 50px
-        line_List = [l for l in line_List if l[-1][1] - l[0][1] > 50]
-        ## Calculate medium height of all staffs
-        mediumStaffHeight = [np.mean([y for y, x in staff]) for staff in line_List]
+        line_list = connect_cc(cc_list)
+        # Remove lines which are shorter than 50px
 
+        line_list = [l for l in line_list if l[-1][1] - l[0][1] > 50]
 
-        ############ Debug #############
-        staff2 = line_List.copy()
-        ################################
+        # Calculate medium height of all staffs
+        medium_staff_height = [np.mean([y_c for y_c, x_c in staff]) for staff in line_list]
 
-        def pruneSmallLines(line_List, mediumStaffHeight, inplace = True):
-            line_Listcp = line_List
-            mediumStaffHeightcp = mediumStaffHeight
-            if inplace != True:
-                mediumStaffHeightcp = mediumStaffHeight.copy()
-                line_Listcp = line_List.copy()
+        # Debug
+        staff2 = line_list.copy()
+
+        def prune_small_lines(line_list, medium_staff_height, inplace=True):
+            line_list_copy = line_list
+            medium_staff_height_copy = medium_staff_height
+            if not inplace:
+                medium_staff_height_copy = medium_staff_height.copy()
+                line_list_copy = line_list_copy.copy()
             while True:
-                prevStaffh = 0
-                for staff_ind, staffh in enumerate(mediumStaffHeightcp):
-                    if (abs(prevStaffh - staffh) < staffSpaceHeight / 3.0) and prevStaffh != 0:
-                        y1a, x1a = line_Listcp[staff_ind - 1][0]
-                        y1e, x1e = line_Listcp[staff_ind - 1][-1]
-                        y2a, x2a = line_Listcp[staff_ind][0]
-                        y2e, x2e = line_Listcp[staff_ind][-1]
-                        if (x2e >= x1e and x2a <= x1a):
-                            del line_Listcp[staff_ind - 1]
-                            del mediumStaffHeight[staff_ind - 1]
+                prev_staff_height = 0
+                for staff_ind, staffh in enumerate(medium_staff_height_copy):
+                    if (abs(prev_staff_height - staffh) < staff_space_height / 3.0) and prev_staff_height != 0:
+                        y1a, x1a = line_list_copy[staff_ind - 1][0]
+                        y1e, x1e = line_list_copy[staff_ind - 1][-1]
+                        y2a, x2a = line_list_copy[staff_ind][0]
+                        y2e, x2e = line_list_copy[staff_ind][-1]
+                        if x2e >= x1e and x2a <= x1a:
+                            del line_list_copy[staff_ind - 1]
+                            del medium_staff_height_copy[staff_ind - 1]
                             break
-                        if (x2e <= x1e and x2a >= x1a):
-                            del line_Listcp[staff_ind]
-                            del mediumStaffHeightcp[staff_ind]
+                        if x2e <= x1e and x2a >= x1a:
+                            del line_list_copy[staff_ind]
+                            del medium_staff_height_copy[staff_ind]
                             break
-                        if (x2e >= x1e and x2a >= x1e ):
-                            line_Listcp[staff_ind - 1] =  line_Listcp[staff_ind - 1] + line_Listcp[staff_ind]
-                            del line_Listcp[staff_ind]
-                            del mediumStaffHeightcp[staff_ind]
+                        if x2e >= x1e and x2a >= x1e:
+                            line_list_copy[staff_ind - 1] = line_list_copy[staff_ind - 1] + line_list_copy[staff_ind]
+                            del line_list_copy[staff_ind]
+                            del medium_staff_height_copy[staff_ind]
                             break
-                        if (x2e <= x1e and x1a >= x2e):
-                            line_Listcp[staff_ind - 1] =   line_Listcp[staff_ind] + line_Listcp[staff_ind - 1]
-                            del line_Listcp[staff_ind]
-                            del mediumStaffHeightcp[staff_ind]
+                        if x2e <= x1e and x1a >= x2e:
+                            line_list_copy[staff_ind - 1] = line_list_copy[staff_ind] + line_list_copy[staff_ind - 1]
+                            del line_list_copy[staff_ind]
+                            del medium_staff_height_copy[staff_ind]
                             break
-                    prevStaffh = staffh
-                    x = False
-                else: break
-            return line_Listcp, mediumStaffHeightcp
+                    prev_staff_height = staffh
+                else:
+                    break
+            return line_list_copy, medium_staff_height_copy
 
-        line_List, mediumStaffHeight = pruneSmallLines(line_List, mediumStaffHeight, inplace = True)
+        line_list, medium_staff_height = prune_small_lines(line_list, medium_staff_height, inplace=True)
 
         if self.settings.numLine != 0:
             staffindices = []
-            for i, medium_y in enumerate(mediumStaffHeight):
+            for i, medium_y in enumerate(medium_staff_height):
                 system = []
                 if i in sum(staffindices, []):
                     continue
                 height = medium_y
-                for z, center_ys in enumerate(mediumStaffHeight):
-                    if np.abs(height - center_ys) < 1.3 *(staffSpaceHeight + stafflineHeight):
+                for z, center_ys in enumerate(medium_staff_height):
+                    if np.abs(height - center_ys) < 1.3 * (staff_space_height + staff_line_height):
                         system.append(z)
                         height = center_ys
                 staffindices.append(system)
             staffindices = [staff for staff in staffindices if len(staff) >= 3]
 
-            def blacknessOfLine(line, img):
-                y, x = zip(*line)
-                f = interpolate.interp1d(x,y)
-                xStart, xEnd = x[0], x[-1]
-                spacedNumbers = np.linspace(xStart, xEnd, num=int(abs(x[0] - x[-1]) * 1 / 5), endpoint=True)
+            def get_blackness_of_line(line, image):
+                y_list, x_list = zip(*line)
+                func = interpolate.interp1d(x_list, y_list)
+                x_start, x_end = x_list[0], x_list[-1]
+                spaced_numbers = np.linspace(x_start, x_end, num=int(abs(x_list[0] - x_list[-1]) * 1 / 5), endpoint=True)
                 blackness = 0
-                for i in spacedNumbers:
-                    if img[int(f(i))][int(i)] == 255:
+                for number in spaced_numbers:
+                    if image[int(func(number))][int(number)] == 255:
                         blackness += 1
                 return blackness
 
             ## Remove the lines with the lowest blackness value in each system, so that len(staffs) <= numLine
             prune = True
-            while prune == True:
+            while prune:
                 prune = False
                 for staff_ind, staff in enumerate(staffindices):
                     if len(staff) > self.settings.numLine:
-                        intensityOfStaff = {}
+                        intensity_of_staff = {}
                         for line_ind, line in enumerate(staff):
-                            intensityOfStaff[line_ind] = blacknessOfLine(line_List[line], img)
-                        if intensityOfStaff:
+                            intensity_of_staff[line_ind] = get_blackness_of_line(line_list[line], img)
+                        if intensity_of_staff:
                             prune = True
-                            minBlackness = min(intensityOfStaff.items(), key = lambda t: t[1])
-                            if minBlackness[0] == 0 or minBlackness[0] == len(intensityOfStaff):
-                                del staffindices[staff_ind][minBlackness[0]]
-                                del intensityOfStaff[minBlackness[0]]
+                            min_blackness = min(intensity_of_staff.items(), key=lambda t: t[1])
+                            if min_blackness[0] == 0 or min_blackness[0] == len(intensity_of_staff):
+                                del staffindices[staff_ind][min_blackness[0]]
+                                del intensity_of_staff[min_blackness[0]]
                                 continue
                             if len(staff) >= self.settings.numLine * 2 + 1 and self.settings.numLine != 0:
-                                if len(staff[:minBlackness[0]]) > 2:
-                                    staffindices.append(staff[:minBlackness[0]])
-                                if len(staff[minBlackness[0]:]) > 2:
-                                    staffindices.append(staff[minBlackness[0]:])
+                                if len(staff[:min_blackness[0]]) > 2:
+                                    staffindices.append(staff[:min_blackness[0]])
+                                if len(staff[min_blackness[0]:]) > 2:
+                                    staffindices.append(staff[min_blackness[0]:])
                                 del staffindices[staff_ind]
                                 continue
-                            del staffindices[staff_ind][minBlackness[0]]
-                            del intensityOfStaff[minBlackness[0]]
+                            del staffindices[staff_ind][min_blackness[0]]
+                            del intensity_of_staff[min_blackness[0]]
 
-            staffList = []
+            staff_list = []
             for z in staffindices:
                 system = []
                 for x in z:
-                    system.append(line_List[x])
-                staffList.append(system)
+                    system.append(line_list[x])
+                staff_list.append(system)
 
-            if self.settings.lineExtension == True:
+            if self.settings.lineExtension:
 
-                for z_ind, z in enumerate(staffList):
+                for z_ind, z in enumerate(staff_list):
                     sxs = [line[0][1] for line in z]
                     exs = [line[-1][1] for line in z]
-                    minIndex_sxs, sxb = sxs.index(min(sxs)), min(sxs)
-                    maxIndex_exs, exb = exs.index(max(exs)), max(exs)
-                    ymi, xmi = zip(*z[minIndex_sxs])
-                    minf = interpolate.interp1d(xmi,ymi, fill_value='extrapolate')
-                    yma, xma = zip(*z[maxIndex_exs])
-                    maxf = interpolate.interp1d(xma,yma, fill_value='extrapolate')
+                    min_index_sxs, sxb = sxs.index(min(sxs)), min(sxs)
+                    max_index_exs, exb = exs.index(max(exs)), max(exs)
+                    ymi, xmi = zip(*z[min_index_sxs])
+                    minf = interpolate.interp1d(xmi, ymi, fill_value='extrapolate')
+                    yma, xma = zip(*z[max_index_exs])
+                    maxf = interpolate.interp1d(xma, yma, fill_value='extrapolate')
 
                     for line_ind, line in enumerate(z):
                         y, x = zip(*line)
                         if line[0][1] > xmi[0] and abs(line[0][1] - xmi[0]) > 5:
-                            xStart, xEnd = xmi[0], min(line[0][1], z[minIndex_sxs][-1][1])
-                            spacedNumbers = np.linspace(xStart, xEnd - 1, num=abs(xEnd - xStart) * 1/5, endpoint=True)
+                            x_start, x_end = xmi[0], min(line[0][1], z[min_index_sxs][-1][1])
+                            spaced_numbers = np.linspace(x_start, x_end - 1, num=abs(x_end - x_start) * 1 / 5, endpoint=True)
                             staffextension = []
                             if line[0][1] > xmi[-1]:
                                 dif = minf(xma[-1]) - line[0][0]
                             else:
                                 dif = minf(line[0][1]) - line[0][0]
-                            for i in spacedNumbers:
+                            for i in spaced_numbers:
                                 staffextension.append([int(minf(i) - dif), int(i)])
                             if staffextension:
-                                staffList[z_ind][line_ind] = staffextension + staffList[z_ind][line_ind]
-                        if line[-1][1] < exs[maxIndex_exs] and abs(line[-1][1] - exs[maxIndex_exs]) > 5:
-                            xStart, xEnd = max(line[-1][1], z[maxIndex_exs][0][1]), exs[maxIndex_exs]
-                            spacedNumbers = np.linspace(xStart, xEnd , num=abs(xEnd - xStart) * 1/5, endpoint=True)
+                                staff_list[z_ind][line_ind] = staffextension + staff_list[z_ind][line_ind]
+                        if line[-1][1] < exs[max_index_exs] and abs(line[-1][1] - exs[max_index_exs]) > 5:
+                            x_start, x_end = max(line[-1][1], z[max_index_exs][0][1]), exs[max_index_exs]
+                            spaced_numbers = np.linspace(x_start, x_end, num=abs(x_end - x_start) * 1 / 5, endpoint=True)
                             staffextension = []
                             if line[-1][1] < xma[0]:
                                 dif = maxf(xma[0]) - line[-1][0]
                             else:
                                 dif = maxf(line[-1][1]) - line[-1][0]
-                            for i in spacedNumbers:
+                            for i in spaced_numbers:
                                 staffextension.append([int(maxf(i) - dif), int(i)])
                             if staffextension:
-                                staffList[z_ind][line_ind] = staffList[z_ind][line_ind] + staffextension
-                        if line[0][1] < sxb and abs(line[0][1] - sxs[minIndex_sxs]) > 5:
+                                staff_list[z_ind][line_ind] = staff_list[z_ind][line_ind] + staffextension
+                        if line[0][1] < sxb and abs(line[0][1] - sxs[min_index_sxs]) > 5:
                             while len(line) > 0 and line[0][1] <= sxb:
                                 del line[0]
-                        if x[-1] > exb and abs(x[-1] - sxs[minIndex_sxs]) > 5:
+                        if x[-1] > exb and abs(x[-1] - sxs[min_index_sxs]) > 5:
                             while line[-1][1] >= exb:
                                 del line[-1]
 
-                for staff_ind, staffs in enumerate(staffList):
-                    mediumStaffHeighOfLine = [np.mean([y for y, x in line]) for line in staffs]
+                for staff_ind, staffs in enumerate(staff_list):
+                    medium_staff_height_of_line = [np.mean([y for y, x in line]) for line in staffs]
                     while True:
-                        prevLineh = 0
-                        for line_ind, lineh in enumerate(mediumStaffHeighOfLine):
-                            if (abs(prevLineh - lineh) < staffSpaceHeight / 2.0) and prevLineh != 0:
-                                blackness1 = blacknessOfLine(staffList[staff_ind][line_ind], img)
-                                blackness2 = blacknessOfLine(staffList[staff_ind][line_ind - 1], img)
+                        prev_line_height = 0
+                        for line_ind, lineh in enumerate(medium_staff_height_of_line):
+                            if (abs(prev_line_height - lineh) < staff_space_height / 2.0) and prev_line_height != 0:
+                                blackness1 = get_blackness_of_line(staff_list[staff_ind][line_ind], img)
+                                blackness2 = get_blackness_of_line(staff_list[staff_ind][line_ind - 1], img)
                                 if blackness1 > blackness2:
-                                    del staffList[staff_ind][line_ind - 1]
-                                    del mediumStaffHeighOfLine[line_ind -1]
+                                    del staff_list[staff_ind][line_ind - 1]
+                                    del medium_staff_height_of_line[line_ind - 1]
                                     break
                                 else:
-                                    del staffList[staff_ind][line_ind]
-                                    del mediumStaffHeighOfLine[line_ind]
+                                    del staff_list[staff_ind][line_ind]
+                                    del medium_staff_height_of_line[line_ind]
                                     break
-                            prevLineh = lineh
-                            x = False
-                        else: break
+                            prev_line_height = lineh
+                        else:
+                            break
         else:
-             staffList = line_List
-    ################# Debug ###################
-        if (self.settings.debug):
-            im = plt.imread(imageData.path)
+            staff_list = line_list
+        # Debug
+        if self.settings.debug:
+            im = plt.imread(image_data.path)
             f, ax = plt.subplots(1, 3, True, True)
-            ax[0].imshow(im, cmap = 'gray')
+            ax[0].imshow(im, cmap='gray')
             cmap = plt.get_cmap('jet')
-            colors = cmap(np.linspace(0, 1.0, len(staffList)))
-            for system, color in zip(staffList,colors):
+            colors = cmap(np.linspace(0, 1.0, len(staff_list)))
+            for system, color in zip(staff_list, colors):
                 for staff in system:
                     y, x = zip(*staff)
-                    ax[0].plot(x,y, color = color)
-            ax[1].imshow(img, cmap = 'gray')
-            ax[2].imshow(im, cmap = 'gray')
+                    ax[0].plot(x, y, color=color)
+            ax[1].imshow(img, cmap='gray')
+            ax[2].imshow(im, cmap='gray')
             for staff in staff2:
                 y, x = zip(*staff)
-                ax[2].plot(x,y, 'r')
+                ax[2].plot(x, y, 'r')
             plt.show()
-    ############################################
-        return staffList
+        return staff_list
+
+
+if __name__ == "__main__":
+    setting = LineDetectionSettings(debug=True)
+    line_detector = LineDetection(setting)
+    for pred in line_detector.detect(['/home/alexanderh/Schreibtisch/masterarbeit/OMR/Graduel_de_leglise_de_Nevers/interesting/part1/bin/Graduel_de_leglise_de_Nevers-035.nrm.png']):
+        pass
