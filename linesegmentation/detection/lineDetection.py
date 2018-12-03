@@ -1,7 +1,7 @@
 ### misc imports
 import sys, os, cv2, operator, tqdm, multiprocessing
 from functools import partial
-from typing import List, Generator
+from typing import List, Generator, Optional
 from itertools import tee
 from dataclasses import dataclass
 import numpy as np
@@ -36,7 +36,7 @@ class LineDetectionSettings:
     debug: bool = False
     lineSpaceHeight: int = None
     targetLineSpaceHeight: int = None
-    model: str = None
+    model: Optional[str] = None
     processes: int = 12
 
 def createData(path, lineSpaceHeight):
