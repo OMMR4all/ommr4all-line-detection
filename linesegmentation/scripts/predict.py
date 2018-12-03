@@ -1,9 +1,8 @@
 import argparse
-import os
 import glob
 from lib.detection.lineDetection import LineDetection, LineDetectionSettings
 import tqdm
-import json
+
 
 def glob_all(filenames):
     files = []
@@ -12,8 +11,9 @@ def glob_all(filenames):
 
     return files
 
+
 def str2bool(v):
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ('yes', 'true', 't', 'y', '1', ''):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
         return False

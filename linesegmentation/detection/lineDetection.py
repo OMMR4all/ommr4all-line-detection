@@ -37,11 +37,12 @@ class ImageData:
 @dataclass
 class LineDetectionSettings:
     numLine: int = 4
+    minLineNum: int = 3
     minLength: int = 6
     lineExtension: bool = True
     debug: bool = False
-    lineSpaceHeight: int = None
-    targetLineSpaceHeight: int = None
+    lineSpaceHeight: int = 20
+    targetLineSpaceHeight: int = 10
     model: Optional[str] = None
     processes: int = 12
 
@@ -206,6 +207,7 @@ class LineDetection:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partital, image_paths), total=len(image_paths))]
 
         for i, pred in enumerate(self.predictor.predict(data)):
+            pred[pred > 0] = 255
             data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - pred)
             data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)), self.settings.minLength)
             yield self.detect_staff_lines(data[i])
@@ -342,7 +344,7 @@ class LineDetection:
 
         line_list, medium_staff_height = prune_small_lines(line_list, medium_staff_height, inplace=True)
 
-        if self.settings.numLine != 0:
+        if self.settings.numLine > 1:
             staffindices = []
             for i, medium_y in enumerate(medium_staff_height):
                 system = []
@@ -354,7 +356,7 @@ class LineDetection:
                         system.append(z)
                         height = center_ys
                 staffindices.append(system)
-            staffindices = [staff for staff in staffindices if len(staff) >= 3]
+            staffindices = [staff for staff in staffindices if len(staff) >= self.settings.minLineNum]
 
             def get_blackness_of_line(line, image):
                 y_list, x_list = zip(*line)

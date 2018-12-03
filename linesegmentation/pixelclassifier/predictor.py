@@ -18,6 +18,5 @@ class PCPredictor:
         )
         for i, pred in enumerate(self.predictor.predict(data)):
             pred = misc.imresize(pred[0][pred[2].xpad:, pred[2].ypad:], pred[2].original_shape, interp="nearest")
-            pred[pred > 0] = 255
             yield pred
 
