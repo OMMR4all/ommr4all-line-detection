@@ -1,26 +1,23 @@
 import os
 import multiprocessing
 import tqdm
+from PIL import Image
+import numpy as np
 from functools import partial
 from matplotlib import pyplot as plt
-from linesegmentation.detection.lineDetection import LineDetection, create_data, vertical_runs,\
-    calculate_horizontal_runs, LineDetectionSettings
+from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data
+from linesegmentation.detection.lineDetection import LineDetection
+
+from linesegmentation.detection.lineDetectionUtil import get_text_borders, vertical_runs, calculate_horizontal_runs
 from pagesegmentation.lib.predictor import PredictSettings
 from linesegmentation.pixelclassifier.predictor import PCPredictor
-from typing import List, Generator
+from typing import List
+from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 
-class lineDetectionRest():
+
+class LineDetectionRest(LineDetector):
     def __init__(self, settings, text_model=None):
-        self.settings = settings
-        self.predictor = None
-        if settings.model:
-            pc_settings = PredictSettings(
-                mode='meta',
-                network=os.path.abspath(settings.model),
-                output=None,
-                high_res_output=False
-            )
-            self.predictor = PCPredictor(pc_settings, settings.targetLineSpaceHeight)
+        super().__init__(settings)
         self.text_predictor = None
         if text_model:
             pc_settings_text = PredictSettings(
@@ -41,6 +38,7 @@ class lineDetectionRest():
             for i, pred in enumerate(zip(self.predictor.predict(data), self.text_predictor.predict(data))):
                 line_prediction = pred[0]
                 region_prediction = pred[1]
+                t_region = np.clip(pred[1], 0 , 1) * 255
                 # test
                 line_prediction[line_prediction > 0] = 255
                 region_prediction[region_prediction < 255] = 0
@@ -54,19 +52,104 @@ class lineDetectionRest():
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - line_prediction_pruned)
                 data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (line_prediction_pruned / 255)),
                                                                         self.settings.minLength)
+                print(get_text_borders(t_region - region_prediction))
+
+                self.detect_staff_lines_rest(data[i], get_text_borders(t_region - region_prediction))
                 yield self.line_detector.detect_staff_lines((data[i]))
         else:
-             for i, pred in enumerate(self.predictor.predict(data)):
-                 pred[pred > 0] = 255
-                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - pred)
-                 data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)),
-                                                                         self.settings.minLength)
-                 yield self.line_detector.detect_staff_lines((data[i]))
+            for i, pred in enumerate(self.predictor.predict(data)):
+                pred[pred > 0] = 255
+                data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - pred)
+                data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)),
+                                                                        self.settings.minLength)
+                data[i].image = np.array(Image.open(data[i].path)) / 255
+                binary = np.array(binarize(data[i].image), dtype='uint8')
+                text_borders = get_text_borders((1 - binary)*255, preprocess=True)
+                self.detect_staff_lines_rest(data[i], text_borders)
+                yield self.line_detector.detect_staff_lines((data[i]))
+
+    def organize_lines_in_systems(self, line_list, staff_space_height, staff_line_height, min_line_number_in_staff,
+                                  text_height):
+        medium_staff_height = [np.mean([y_c for y_c, x_c in staff]) for staff in line_list]
+        staffindices = []
+        prev_text_height = 0
+        for th in text_height:
+            m_staff_height_between_interval = [x for x in medium_staff_height if prev_text_height <= x <= th]
+            for i, medium_y in enumerate(medium_staff_height):
+                system = []
+                if i in sum(staffindices, []) or medium_y not in m_staff_height_between_interval:
+                    continue
+                height = medium_y
+                for z, center_ys in enumerate(medium_staff_height):
+                    if np.abs(height - center_ys) < 2.1 * (
+                            staff_space_height + staff_line_height) and center_ys in m_staff_height_between_interval:
+                        system.append(z)
+                        height = center_ys
+                staffindices.append(system)
+            prev_text_height = th
+        staffindices = [staff for staff in staffindices if len(staff) >= min_line_number_in_staff]
+        staff_list = []
+        for z in staffindices:
+            system = []
+            for x in z:
+                system.append(line_list[x])
+            staff_list.append(system)
+        return staff_list
+
+    def detect_staff_lines_rest(self, image_data: ImageData, text_height):
+        img = image_data.horizontal_runs_img
+        staff_line_height = image_data.staff_line_height
+        staff_space_height = image_data.staff_space_height
+
+        cc_list = self.extract_conneceted_components(img)
+        cc_list = self.normalize_connected_components(cc_list)
+        line_list = self.connect_connected_components_to_line(cc_list, staff_line_height, staff_space_height)
+
+        # Remove lines which are shorter than 50px
+        line_list = [l for l in line_list if l[-1][1] - l[0][1] > 50]
+
+        # Debug
+        staff2 = line_list.copy()
+
+        line_list = self.prune_small_lines(line_list, staff_space_height)
+
+        if self.settings.numLine > 1:
+            staff_list = self.organize_lines_in_systems(line_list, staff_space_height, staff_line_height,
+                                                        self.settings.minLineNum, text_height)
+            staff_list = self.prune_lines_in_system_with_lowest_intensity(staff_list, img)
+            if self.settings.lineExtension:
+                staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
+
+        else:
+            staff_list = line_list
+
+        # Debug
+        if self.settings.debug:
+            im = plt.imread(image_data.path)
+            f, ax = plt.subplots(1, 3, True, True)
+            ax[0].imshow(im, cmap='gray')
+            cmap = plt.get_cmap('jet')
+            colors = cmap(np.linspace(0, 1.0, len(staff_list)))
+            for system, color in zip(staff_list, colors):
+                for staff in system:
+                    y, x = zip(*staff)
+                    ax[0].plot(x, y, color=color)
+            ax[1].imshow(img, cmap='gray')
+            ax[2].imshow(im, cmap='gray')
+            for staff in staff2:
+                y, x = zip(*staff)
+                ax[2].plot(x, y, 'r')
+            plt.show()
+        return staff_list
 
 if __name__ == "__main__":
-    settings = LineDetectionSettings(debug=True, minLineNum=2, numLine=6, lineSpaceHeight=20,targetLineSpaceHeight=10,
+    settings_prediction = LineDetectionSettings(debug=True, minLineNum=2, numLine=6, lineSpaceHeight=20
+                                                ,targetLineSpaceHeight=10,
                                      model='/home/alexanderh/Schreibtisch/masterarbeit/models/line/restnrmthl10')
-    line_detector = lineDetectionRest(settings,'/home/alexanderh/Schreibtisch/masterarbeit/models/region//model')
-    for pred in line_detector.detect_advanced(
-            ['/home/alexanderh/Schreibtisch/masterarbeit/OMR/Graduel_de_leglise_de_Nevers/restnrm/Graduel_de_leglise_de_Nevers-429.nrm.png']):
+
+    line_detector = LineDetectionRest(settings_prediction,
+                                      '/home/alexanderh/Schreibtisch/masterarbeit/models/region//model')
+    data = ['/home/alexanderh/Schreibtisch/masterarbeit/OMR/Graduel_de_leglise_de_Nevers/restnrm/Graduel_de_leglise_de_Nevers-427.nrm.png']
+    for _pred in line_detector.detect_advanced(
+            data):
         pass
