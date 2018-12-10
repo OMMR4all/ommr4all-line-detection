@@ -76,35 +76,6 @@ class LineDetector():
             )
             self.predictor = PCPredictor(pcsettings, settings.targetLineSpaceHeight)
 
-    def extract_conneceted_components(self, image):
-        connectivity = 8
-        output = cv2.connectedComponentsWithStats(image, connectivity)
-        ccdict = defaultdict(list)
-        indexdim0, indexdim1 = np.array(output[1]).nonzero()
-        points = list(zip(indexdim0, indexdim1))
-        for p in points:
-            y_coord, x_coord = p[0], p[1]
-            k = output[1][y_coord][x_coord]
-            ccdict[k].append([y_coord, x_coord])
-        cc_list = list(ccdict.values())
-        [x.sort(key=operator.itemgetter(1)) for x in cc_list]
-        return cc_list
-
-    def normalize_connected_components(self, cc_list):
-        # Normalize the CCs (line segments), so that the height of each cc is normalized to one pixel
-        def normalize(point_list):
-            normalized_cc_list = []
-            for cc in point_list:
-                cc_dict = defaultdict(list)
-                for y, x in cc:
-                    cc_dict[x].append(y)
-                normalized_cc = []
-                for key, value in cc_dict.items():
-                    normalized_cc.append([int(np.floor(np.mean(value) + 0.5)), key])
-                normalized_cc_list.append(normalized_cc)
-            return normalized_cc_list
-        return normalize(cc_list)
-
     def connect_connected_components_to_line(self, cc_list, staff_line_height, staff_space_height):
         def connect_cc(cc_list, inplace=True):
             def prune_cc(cc_list, length):
@@ -191,7 +162,7 @@ class LineDetector():
                 break
         return line_list_copy
 
-    def organize_lines_in_systems(self, line_list, staff_space_height, staff_line_height, min_line_number_in_staff):
+    def organize_lines_in_systems(self, line_list, staff_space_height, staff_line_height):
         # Calculate medium height of all staffs
         medium_staff_height = [np.mean([y_c for y_c, x_c in staff]) for staff in line_list]
         staff_indices = []
@@ -205,7 +176,7 @@ class LineDetector():
                     system.append(z)
                     height = center_ys
             staff_indices.append(system)
-        staffindices = [staff for staff in staff_indices if len(staff) >= min_line_number_in_staff]
+        staffindices = [staff for staff in staff_indices if len(staff) >= self.settings.minLineNum]
         staff_list = []
         for z in staffindices:
             system = []

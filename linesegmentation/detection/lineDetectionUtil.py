@@ -4,9 +4,9 @@ import numpy as np
 from itertools import tee
 
 
-def get_text_borders(image, preprocess = False, min_dist = 30, thres = 0.3):
+def get_text_borders(image, preprocess=False, min_dist=30, thres=0.3):
     med = image.copy()
-    if preprocess == True:
+    if preprocess:
         med = medfilt2d(image, 9)
     histogram = np.sum(med == 255, axis=1)
     text_borders = peakutils.indexes(histogram, thres=thres, min_dist=min_dist)

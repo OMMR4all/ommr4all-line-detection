@@ -13,8 +13,7 @@ from scipy.ndimage.morphology import binary_erosion, binary_dilation
 from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
-
-
+from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, normalize_connected_components
 class LineDetection(LineDetector):
     """Line detection class
 
@@ -36,7 +35,6 @@ class LineDetection(LineDetector):
             Settings for the line detection algorithm
         """
         super().__init__(settings)
-
 
     def detect(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
         """
@@ -107,8 +105,8 @@ class LineDetection(LineDetector):
         staff_line_height = image_data.staff_line_height
         staff_space_height = image_data.staff_space_height
 
-        cc_list = self.extract_conneceted_components(img)
-        cc_list = self.normalize_connected_components(cc_list)
+        cc_list = extract_connected_components(img)
+        cc_list = normalize_connected_components(cc_list)
         line_list = self.connect_connected_components_to_line(cc_list, staff_line_height, staff_space_height)
 
         # Remove lines which are shorter than 50px
@@ -120,8 +118,7 @@ class LineDetection(LineDetector):
         line_list = self.prune_small_lines(line_list, staff_space_height)
 
         if self.settings.numLine > 1:
-            staff_list = self.organize_lines_in_systems(line_list, staff_space_height, staff_line_height,
-                                                        self.settings.minLineNum)
+            staff_list = self.organize_lines_in_systems(line_list, staff_space_height, staff_line_height)
             staff_list = self.prune_lines_in_system_with_lowest_intensity(staff_list, img)
             if self.settings.lineExtension:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
