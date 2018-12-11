@@ -33,3 +33,17 @@ def normalize_connected_components(cc_list):
             normalized_cc_list.append(normalized_cc)
         return normalized_cc_list
     return normalize(cc_list)
+
+
+def convert_2dpoint_to_1did(list, width):
+    point_to_id = list[1] * width + list[0]
+    return point_to_id
+
+
+def convert_2darray_to_1array(array, width):
+    return array[:, 0] * width + array[:, 1]
+
+
+if __name__ == "__main__":
+    l = np.array([[1,2],[2,4], [2,1]])
+    print(convert_2darray_to_1array(l))
