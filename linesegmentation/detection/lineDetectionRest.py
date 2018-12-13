@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 from functools import partial
 from matplotlib import pyplot as plt
-from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data
+from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, create_data, ImageData
 from linesegmentation.detection.lineDetectionUtil import get_text_borders, vertical_runs, calculate_horizontal_runs
 from pagesegmentation.lib.predictor import PredictSettings
 from linesegmentation.pixelclassifier.predictor import PCPredictor

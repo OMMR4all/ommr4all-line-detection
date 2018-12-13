@@ -1,8 +1,5 @@
 # misc imports
-import cv2
-import operator
 import os
-from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Optional
 import numpy as np
@@ -13,6 +10,8 @@ from linesegmentation.pixelclassifier.predictor import PCPredictor
 from PIL import Image
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.detection.lineDetectionUtil import vertical_runs
+from linesegmentation.datatypes.datatypes import ImageData
+
 
 @dataclass
 class LineDetectionSettings:
@@ -37,15 +36,6 @@ def get_blackness_of_line(line, image):
         if image[int(func(number))][int(number)] == 255:
             blackness += 1
     return blackness
-
-@dataclass
-class ImageData:
-    path: str = None
-    height: int = None
-    image: np.array = None
-    horizontal_runs_img: np.array = None
-    staff_line_height: int = None
-    staff_space_height: int = None
 
 
 def create_data(path, line_space_height):

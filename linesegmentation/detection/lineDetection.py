@@ -14,6 +14,8 @@ from linesegmentation.detection.lineDetector import LineDetector, LineDetectionS
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, normalize_connected_components
+
+
 class LineDetection(LineDetector):
     """Line detection class
 
