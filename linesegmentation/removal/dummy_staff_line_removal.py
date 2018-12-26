@@ -5,7 +5,6 @@ from skimage import morphology, measure
 def staff_removal(staffs_lines, img, line_height):
     nimg = np.copy(img)
     h = nimg.shape[0]
-    w = nimg.shape[1]
     for system in staffs_lines:
         for staff in system:
             y, x = zip(*staff)
@@ -13,8 +12,19 @@ def staff_removal(staffs_lines, img, line_height):
             x_start, x_end = x[0], x[-1]
             for i in range(x_start, x_end):
                 count = []
-                yt = int(f(i))
-                yb = int(f(i))
+                l2 = line_height // 2
+                st_point = int(f(i))
+                if nimg[st_point][i] != 0:
+                    for z in range(1, l2 + 1):
+                        print(z)
+                        if nimg[st_point - z][i] == 0:
+                            st_point = st_point-z
+                            break
+                        if nimg[st_point + z][i] == 0:
+                           st_point = st_point-z
+                           break
+                yt = st_point
+                yb = st_point
                 if nimg[yt][i] == 0:
                     count.append(yt)
                     while yt < h - 1:
@@ -32,10 +42,6 @@ def staff_removal(staffs_lines, img, line_height):
                 if len(count) <= line_height:
                     for it in count:
                         nimg[it][i] = 1
-    # Label all connected components:
-    #all_labels = measure.label(nimg, background = 1)
-    #morphology.remove_small_objects(all_labels, maxNoiseSize, in_place = True)
-    #return np.clip(all_labels, 0, 1)
     return nimg
 
 if __name__ == "__main__":
@@ -54,9 +60,13 @@ if __name__ == "__main__":
     for _pred in line_detector.detect([page_path]):
         img = np.array(Image.open(page_path)) / 255
         binary_img = binarize(img)
-        spaceheight, lineheight = vertical_runs(binary_img)
-        img_staffs_removed = staff_removal(_pred, binary_img, lineheight)
+        space_height, line_height = vertical_runs(binary_img)
+        img_staffs_removed = staff_removal(_pred, binary_img, line_height)
         i, ax = plt.subplots(1, 2, True, True)
         ax[0].imshow(binary_img)
         ax[1].imshow(img_staffs_removed)
+        for s in _pred:
+            for l in s:
+                y, x = zip(*l)
+                ax[1].plot(x,y)
         plt.show()
