@@ -133,13 +133,18 @@ class LineDetectionRest(LineDetector):
         return staff_list
 
 if __name__ == "__main__":
+    import os
+
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-427.nrm.png')
+    model_line = os.path.join(project_dir, 'demo/models/line/model')
+    model_region = os.path.join(project_dir, 'demo/models/region/model')
     settings_prediction = LineDetectionSettings(debug=True, minLineNum=2, numLine=6, lineSpaceHeight=20
                                                 ,targetLineSpaceHeight=10,
-                                     model='/home/alexanderh/Schreibtisch/masterarbeit/models/line/restnrmthl10')
+                                     model=model_line)
 
-    line_detector = LineDetectionRest(settings_prediction,
-                                      '/home/alexanderh/Schreibtisch/masterarbeit/models/region//model')
-    data = ['/home/alexanderh/Schreibtisch/masterarbeit/OMR/Graduel_de_leglise_de_Nevers/restnrm/Graduel_de_leglise_de_Nevers-427.nrm.png']
+    line_detector = LineDetectionRest(settings_prediction, model_region)
+    data = [page_path]
 
     for _pred in line_detector.detect_advanced(
             data):

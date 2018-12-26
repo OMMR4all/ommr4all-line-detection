@@ -40,10 +40,10 @@ def convert_2dpoint_to_1did(list, width):
     return point_to_id
 
 
-def convert_2darray_to_1array(array, width):
+def convert_2darray_to_1darray(array, width):
     return array[:, 0] * width + array[:, 1]
 
 
 if __name__ == "__main__":
     l = np.array([[1,2],[2,4], [2,1]])
-    print(convert_2darray_to_1array(l))
+    print(convert_2darray_to_1darray(l))
