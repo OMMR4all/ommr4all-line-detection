@@ -9,20 +9,19 @@ def staff_removal(staffs_lines, img, line_height):
         for staff in system:
             y, x = zip(*staff)
             f = interpolate.interp1d(x, y)
-            x_start, x_end = x[0], x[-1]
+            x_start, x_end = min(x), max(x)
             for i in range(x_start, x_end):
                 count = []
                 l2 = line_height // 2
                 st_point = int(f(i))
                 if nimg[st_point][i] != 0:
                     for z in range(1, l2 + 1):
-                        print(z)
                         if nimg[st_point - z][i] == 0:
                             st_point = st_point-z
                             break
                         if nimg[st_point + z][i] == 0:
-                           st_point = st_point-z
-                           break
+                            st_point = st_point-z
+                            break
                 yt = st_point
                 yb = st_point
                 if nimg[yt][i] == 0:
