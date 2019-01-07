@@ -92,7 +92,7 @@ class LineDetection(LineDetector):
 
     def detect_advanced(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
 
-        create_data_partital = partial(create_data, lineSpaceHeight=self.settings.lineSpaceHeight)
+        create_data_partital = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partital, image_paths), total=len(image_paths))]
 
