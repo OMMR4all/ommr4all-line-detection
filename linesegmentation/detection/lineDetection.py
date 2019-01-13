@@ -130,6 +130,8 @@ class LineDetection(LineDetector):
 
         if self.settings.post_process:
             staff_list = self.postprocess_staff_systems(staff_list, staff_line_height, binarize(image_data.image))
+            if self.settings.numLine > 1 and self.settings.lineExtension:
+                staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
 
         # Debug
         if self.settings.debug:
