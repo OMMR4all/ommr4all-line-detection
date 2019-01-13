@@ -127,6 +127,10 @@ class LineDetection(LineDetector):
 
         else:
             staff_list = line_list
+
+        if self.settings.post_process:
+            staff_list = self.postprocess_staff_systems(staff_list, staff_line_height, binarize(image_data.image))
+
         # Debug
         if self.settings.debug:
             im = plt.imread(image_data.path)
@@ -149,7 +153,7 @@ class LineDetection(LineDetector):
 
 if __name__ == "__main__":
     import os
-    setting_predictor = LineDetectionSettings(debug=True)
+    setting_predictor = LineDetectionSettings(debug=True, post_process_debug=True, post_process=True)
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')

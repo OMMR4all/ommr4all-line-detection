@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.interpolate import interpolate
-from skimage import morphology, measure
 
 def staff_removal(staffs_lines, img, line_height):
     nimg = np.copy(img)

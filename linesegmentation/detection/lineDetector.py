@@ -11,7 +11,7 @@ from PIL import Image
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.detection.lineDetectionUtil import vertical_runs
 from linesegmentation.datatypes.datatypes import ImageData
-
+from collections import defaultdict
 
 @dataclass
 class LineDetectionSettings:
@@ -22,6 +22,8 @@ class LineDetectionSettings:
     debug: bool = False
     lineSpaceHeight: int = 20
     targetLineSpaceHeight: int = 10
+    post_process: bool = False
+    post_process_debug: bool = False
     model: Optional[str] = None
     processes: int = 12
 
@@ -267,3 +269,69 @@ class LineDetector():
                 else:
                     break
         return staff_list
+
+    def postprocess_staff_systems(self, staffs_lines, line_height, image):
+        from matplotlib import pyplot as plt
+        post_processed_staff_systems = []
+        h = image.shape[0]
+
+        for system in staffs_lines:
+            procssed_system = []
+            for staff in system:
+                y, x = zip(*staff)
+                f = interpolate.interp1d(x, y)
+                x_start, x_end = min(x), max(x)
+                dict_count = defaultdict(list)
+                for i in range(x_start, x_end):
+                    l2 = line_height // 2
+                    st_point = int(f(i))
+                    if image[st_point][i] != 0:
+                        for z in range(1, l2 + 1):
+                            if image[st_point - z][i] == 0:
+                                st_point = st_point - z
+                                break
+                            if image[st_point + z][i] == 0:
+                                st_point = st_point - z
+                                break
+                    yt = st_point
+                    yb = st_point
+
+                    if image[yt][i] == 0:
+                        dict_count[i].append(yt)
+                        while yt < h - 1:
+                            yt += 1
+                            if image[yt][i] == 0:
+                                dict_count[i].append(yt)
+                            else:
+                                break
+                        while yb > 0:
+                            yb -= 1
+                            if image[yb][i] == 0:
+                                dict_count[i].append(yb)
+                            else:
+                                break
+                processed_staff = []
+                for key in dict_count.keys():
+                    if len(dict_count[key]) <= line_height:
+                        processed_staff.append([np.mean(dict_count[key]), key])
+                procssed_system.append(processed_staff)
+            post_processed_staff_systems.append(procssed_system)
+
+        if self.settings.post_process_debug:
+            f, ax = plt.subplots(1, 2, True, True)
+            ax[0].imshow(image, cmap='gray')
+            ax[1].imshow(image, cmap='gray')
+            cmap = plt.get_cmap('jet')
+            colors = cmap(np.linspace(0, 1.0, len(staffs_lines)))
+            for system, color in zip(staffs_lines, colors):
+                for staff in system:
+                    y, x = zip(*staff)
+                    ax[0].plot(x, y, color=color)
+            for system, color in zip(post_processed_staff_systems, colors):
+                for staff in system:
+                    y, x = zip(*staff)
+                    ax[1].plot(x, y, color=color)
+            plt.show()
+        return post_processed_staff_systems
+
+

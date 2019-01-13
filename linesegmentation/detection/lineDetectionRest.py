@@ -132,6 +132,7 @@ class LineDetectionRest(LineDetector):
             plt.show()
         return staff_list
 
+
 if __name__ == "__main__":
     import os
 
