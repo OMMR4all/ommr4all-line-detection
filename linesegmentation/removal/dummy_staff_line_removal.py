@@ -19,7 +19,7 @@ def staff_removal(staffs_lines, img, line_height):
                             st_point = st_point-z
                             break
                         if nimg[st_point + z][i] == 0:
-                            st_point = st_point-z
+                            st_point = st_point+z
                             break
                 yt = st_point
                 yb = st_point
