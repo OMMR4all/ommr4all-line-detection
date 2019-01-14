@@ -92,13 +92,13 @@ class LineDetection(LineDetector):
 
     def detect_advanced(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
 
-        create_data_partital = partial(create_data, lineSpaceHeight=self.settings.lineSpaceHeight)
+        create_data_partital = partial(create_data, line_space_height=self.settings.lineSpaceHeight, load_image=True)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partital, image_paths), total=len(image_paths))]
 
         for i, pred in enumerate(self.predictor.predict(data)):
             pred[pred > 0] = 255
-            data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - pred)
+            data[i].staff_space_height, data[i].staff_line_height = vertical_runs(binarize(data[i].image))
             data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)), self.settings.minLength)
             yield self.detect_staff_lines(data[i])
 

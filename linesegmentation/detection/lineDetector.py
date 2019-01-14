@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import List, Optional
 import numpy as np
+import math
 # project specific imports
 from pagesegmentation.lib.predictor import PredictSettings
 from scipy.interpolate import interpolate
@@ -40,11 +41,18 @@ def get_blackness_of_line(line, image):
     return blackness
 
 
-def create_data(path, line_space_height):
+def create_data(path, line_space_height, load_image = False):
     space_height = line_space_height
+    image = None
     if line_space_height == 0:
-        space_height = vertical_runs(binarize(np.array(Image.open(path)) / 255))[0]
+        image = np.array(Image.open(path)) / 255
+        space_height = vertical_runs(binarize(image))[0]
     image_data = ImageData(path=path, height=space_height)
+    if load_image:
+        if image.size == 0:
+            image = np.array(Image.open(path)) / 255
+        image_data.image = image
+
     return image_data
 
 
@@ -274,7 +282,8 @@ class LineDetector():
         from matplotlib import pyplot as plt
         post_processed_staff_systems = []
         h = image.shape[0]
-
+        l2 = math.ceil(line_height / 2)
+        l2 = max(l2, 2)
         for system in staffs_lines:
             procssed_system = []
             for staff in system:
@@ -283,7 +292,7 @@ class LineDetector():
                 x_start, x_end = min(x), max(x)
                 dict_count = defaultdict(list)
                 for i in range(x_start, x_end):
-                    l2 = line_height // 2
+
                     st_point = int(f(i))
                     if image[st_point][i] != 0:
                         for z in range(1, l2 + 1):
@@ -291,7 +300,7 @@ class LineDetector():
                                 st_point = st_point - z
                                 break
                             if image[st_point + z][i] == 0:
-                                st_point = st_point - z
+                                st_point = st_point + z
                                 break
                     yt = st_point
                     yb = st_point
