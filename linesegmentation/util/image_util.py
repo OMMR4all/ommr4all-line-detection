@@ -9,13 +9,11 @@ def normalize_raw_image(raw):
 
 
 def smooth_array(values, smoothing):
-    print(len(values))
     value = values[0] # start with the first input
     for i in range(len(values)):
         current_value = values[i]
         value += (current_value - value) / smoothing
         values[i] = int(value)
-    print(len(values))
     return values
 
 
