@@ -135,6 +135,7 @@ class LineDetection(LineDetector):
 
         # Debug
         if self.settings.debug:
+            #from linesegmentation.util.image_util import smooth_array
             im = plt.imread(image_data.path)
             f, ax = plt.subplots(1, 3, True, True)
             ax[0].imshow(im, cmap='gray')
@@ -143,6 +144,7 @@ class LineDetection(LineDetector):
             for system, color in zip(staff_list, colors):
                 for staff in system:
                     y, x = zip(*staff)
+                    #y = smooth_array(list(y), 3)
                     ax[0].plot(x, y, color=color)
             ax[1].imshow(img, cmap='gray')
             ax[2].imshow(im, cmap='gray')

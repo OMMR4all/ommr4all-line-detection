@@ -1,10 +1,22 @@
 import numpy as np
 from PIL import Image, ImageStat
 
+
 def normalize_raw_image(raw):
     image = raw.astype(np.float32) - np.amin(raw)
     image /= np.amax(raw)
     return image
+
+
+def smooth_array(values, smoothing):
+    print(len(values))
+    value = values[0] # start with the first input
+    for i in range(len(values)):
+        current_value = values[i]
+        value += (current_value - value) / smoothing
+        values[i] = int(value)
+    print(len(values))
+    return values
 
 
 def detect_color_image(file, thumb_size=40, MSE_cutoff=22, adjust_color_bias=True):
