@@ -49,7 +49,7 @@ def create_data(path, line_space_height, load_image = False):
         space_height = vertical_runs(binarize(image))[0]
     image_data = ImageData(path=path, height=space_height)
     if load_image:
-        if image.size == 0:
+        if line_space_height != 0:
             image = np.array(Image.open(path)) / 255
         image_data.image = image
 
