@@ -12,7 +12,10 @@ from PIL import Image
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.detection.lineDetectionUtil import vertical_runs
 from linesegmentation.datatypes.datatypes import ImageData
+from linesegmentation.util.image_util import smooth_array
 from collections import defaultdict
+from matplotlib import pyplot as plt
+
 
 @dataclass
 class LineDetectionSettings:
@@ -25,6 +28,8 @@ class LineDetectionSettings:
     targetLineSpaceHeight: int = 10
     post_process: bool = False
     post_process_debug: bool = False
+    smooth_lines: bool = False
+    smooth_value: float = 1.5
     model: Optional[str] = None
     processes: int = 12
 
@@ -279,7 +284,6 @@ class LineDetector():
         return staff_list
 
     def postprocess_staff_systems(self, staffs_lines, line_height, image):
-        from matplotlib import pyplot as plt
         post_processed_staff_systems = []
         h = image.shape[0]
         l2 = math.ceil(line_height / 2)
@@ -343,4 +347,17 @@ class LineDetector():
             plt.show()
         return post_processed_staff_systems
 
+    def smooth_lines(self, stafflines, smooth_value=1.5):
+        if self.settings.smooth_value:
+            smooth_value = self.settings.smooth_value
+        new_stafflines = []
+        for system in stafflines:
+            new_system = []
+            for line in system:
+                y, x = zip(*line)
+                y = smooth_array(list(y), smooth_value)
+                line = zip(y, x)
+                new_system.append(line)
+            new_stafflines.append(new_system)
+        return new_stafflines
 

@@ -133,6 +133,9 @@ class LineDetection(LineDetector):
             if self.settings.numLine > 1 and self.settings.lineExtension:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
 
+        if self.settings.smooth_lines:
+            staff_list = self.smooth_lines(staff_list)
+
         # Debug
         if self.settings.debug:
             #from linesegmentation.util.image_util import smooth_array
@@ -157,7 +160,7 @@ class LineDetection(LineDetector):
 
 if __name__ == "__main__":
     import os
-    setting_predictor = LineDetectionSettings(debug=True, post_process_debug=True, post_process=True)
+    setting_predictor = LineDetectionSettings(debug=True, post_process_debug=True, post_process=True, smooth_lines=True, smooth_value=1.6)
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
