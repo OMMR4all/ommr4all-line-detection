@@ -28,8 +28,10 @@ class LineDetectionSettings:
     targetLineSpaceHeight: int = 10
     post_process: bool = False
     post_process_debug: bool = False
-    smooth_lines: bool = False
-    smooth_value: float = 1.5
+    smooth_lines: int = 0 # 0 = Off, 1 = basic Smoothing, 2 = Advanced Smoothing (slow)
+    smooth_value_lowpass: float = 5
+    smooth_value_adv: int = 25
+    smooth_lines_advdebug: bool = False
     model: Optional[str] = None
     processes: int = 12
 
@@ -347,17 +349,119 @@ class LineDetector():
             plt.show()
         return post_processed_staff_systems
 
-    def smooth_lines(self, stafflines, smooth_value=1.5):
-        if self.settings.smooth_value:
-            smooth_value = self.settings.smooth_value
+    def smooth_lines(self, stafflines, smooth_value=5):
         new_stafflines = []
         for system in stafflines:
             new_system = []
             for line in system:
                 y, x = zip(*line)
                 y = smooth_array(list(y), smooth_value)
-                line = zip(y, x)
+                line = list(zip(y, x))
                 new_system.append(line)
             new_stafflines.append(new_system)
+
         return new_stafflines
+
+    def smooth_lines_advanced(self, stafflines, smooth_value=25):
+        new_stafflines = []
+        for system in stafflines:
+            new_system = []
+            for line in system:
+                y, x = zip(*line)
+                x = list(x)
+                y = list(y)
+                x, y = interpolate_sequence(x, y)
+                remove_hill(y, smooth_value)
+                line = list(zip(y, x))
+                new_system.append(line)
+            new_stafflines.append(new_system)
+
+        if self.settings.smooth_lines_advdebug:
+            f, ax = plt.subplots(1, 2, True, True)
+            cmap = plt.get_cmap('jet')
+            colors = cmap(np.linspace(0, 1.0, len(new_stafflines)))
+            for system, color in zip(stafflines, colors):
+                for staff in system:
+                    y, x = zip(*staff)
+                    ax[0].plot(x, y, color=color)
+            for system, color in zip(new_stafflines, colors):
+                for staff in system:
+                    y, x = zip(*staff)
+                    ax[1].plot(x, y, color=color)
+            plt.show()
+        return new_stafflines
+
+
+def remove_hill(y, smooth=25):
+    # this will modify y
+    correction = True
+    it = 1
+    while correction:
+        correction = False
+        it += 1
+
+        for hlen in range(1, smooth + 1):
+            for start in range(len(y) - (hlen + 1)):
+                start_y = y[start]
+                end_y = y[start + hlen + 1]
+
+                # correct down
+                for xc in range(start + 1, start + hlen + 1):
+                    yc = y[xc]
+                    if not (yc > start_y and yc > end_y):
+                        break
+                else:
+                    for xc in range(start + 1, start + hlen + 1):
+                        y[xc] = max(start_y, end_y)
+                        correction = True
+                if correction: break
+                # correct up
+                for xc in range(start + 1, start + hlen + 1):
+                    yc = y[xc]
+                    if not (yc < start_y and yc < end_y):
+                        break
+                else:
+                    for xc in range(start + 1, start + hlen + 1):
+                        y[xc] = min(start_y, end_y)
+                        correction = True
+
+                if correction: break
+            if correction: break
+
+
+def interpolate_sequence(x_list, y_list):
+    func = interpolate.interp1d(x_list, y_list)
+    x_start, x_end = x_list[0], x_list[-1]
+    x_list_new = []
+    y_list_new = []
+    for i in range(x_start, x_end + 1):
+        x_list_new.append(i)
+        y_list_new.append(int(math.floor(func(i) + 0.5)))
+    return x_list_new, y_list_new
+
+
+def prune_points_in_line(stafflist):
+    new_stafflist = []
+    for system in stafflist:
+        new_system = []
+        for line in system:
+            y, x = zip(*line)
+            new_x, new_y = [], []
+            prev = None
+            for ind, i in enumerate(y):
+                if prev != i:
+                    new_x.append(x[ind])
+                    new_y.append(y[ind])
+                    prev = i
+            line = list(zip(y, x))
+            new_system.append(line)
+        new_stafflist.append(new_system)
+    return new_stafflist
+
+
+if __name__ == "__main__":
+    y = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9]
+    print('Start')
+    remove_hill(y,15)
+    print(y)
 
