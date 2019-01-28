@@ -28,10 +28,11 @@ class LineDetectionSettings:
     targetLineSpaceHeight: int = 10
     post_process: bool = False
     post_process_debug: bool = False
-    smooth_lines: int = 0 # 0 = Off, 1 = basic Smoothing, 2 = Advanced Smoothing (slow)
+    smooth_lines: int = 0 # 0 = Off, 1 = basic Smoothing, 2 = Advanced Smoothing (slower)
     smooth_value_lowpass: float = 5
     smooth_value_adv: int = 25
     smooth_lines_advdebug: bool = False
+    keep_start_and_end: bool = True
     model: Optional[str] = None
     processes: int = 12
 
@@ -440,7 +441,7 @@ def interpolate_sequence(x_list, y_list):
     return x_list_new, y_list_new
 
 
-def prune_points_in_line(stafflist):
+def prune_points_in_line(stafflist, keep_start_and_end=True):
     new_stafflist = []
     for system in stafflist:
         new_system = []
@@ -450,6 +451,9 @@ def prune_points_in_line(stafflist):
             prev = None
             for ind, i in enumerate(y):
                 if prev != i:
+                    if keep_start_and_end and ind != 0:
+                        new_x.append(x[ind - 1])
+                        new_y.append(y[ind - 1])
                     new_x.append(x[ind])
                     new_y.append(y[ind])
                     prev = i

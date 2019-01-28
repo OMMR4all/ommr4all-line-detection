@@ -139,14 +139,14 @@ class LineDetection(LineDetector):
             if self.settings.smooth_lines == 2:
                 staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
 
-        staff_list = prune_points_in_line(staff_list)
+        staff_list = prune_points_in_line(staff_list, self.settings.keep_start_and_end)
 
         # Debug
         if self.settings.debug:
             #from linesegmentation.util.image_util import smooth_array
             im = plt.imread(image_data.path)
             f, ax = plt.subplots(1, 3, True, True)
-            ax[0].imshow(im, cmap='gray')
+            ax[0].imshow(binarize(im), cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
             for system, color in zip(staff_list, colors):
@@ -169,5 +169,5 @@ if __name__ == "__main__":
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect([page_path]):
+    for _pred in line_detector.detect(['/home/alexanderh/Schreibtisch/masterarbeit/OMR/Graduel_de_leglise_de_Nevers/interesting/part3/bin/Graduel_de_leglise_de_Nevers-536.nrm.png']):
         pass
