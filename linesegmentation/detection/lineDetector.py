@@ -453,7 +453,10 @@ def prune_points_in_line(stafflist):
                     new_x.append(x[ind])
                     new_y.append(y[ind])
                     prev = i
+            new_x.append(x[-1])
+            new_y.append(y[-1])
             line = list(zip(new_y, new_x))
+
             new_system.append(line)
         new_stafflist.append(new_system)
     return new_stafflist
