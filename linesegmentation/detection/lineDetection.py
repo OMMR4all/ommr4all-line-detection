@@ -169,5 +169,5 @@ if __name__ == "__main__":
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect(['/home/alexanderh/Schreibtisch/masterarbeit/OMR/Graduel_de_leglise_de_Nevers/interesting/part3/bin/Graduel_de_leglise_de_Nevers-536.nrm.png']):
+    for _pred in line_detector.detect([page_path]):
         pass
