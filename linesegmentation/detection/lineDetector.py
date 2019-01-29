@@ -441,7 +441,7 @@ def interpolate_sequence(x_list, y_list):
     return x_list_new, y_list_new
 
 
-def prune_points_in_line(stafflist, keep_start_and_end=True):
+def prune_points_in_line(stafflist, keep_start_and_end=False):
     new_stafflist = []
     for system in stafflist:
         new_system = []
@@ -459,6 +459,9 @@ def prune_points_in_line(stafflist, keep_start_and_end=True):
                     prev = i
             new_x.append(x[-1])
             new_y.append(y[-1])
+            if new_x[0] == new_x[1]:
+                del new_x[0]
+                del new_y[0]
             line = list(zip(new_y, new_x))
 
             new_system.append(line)
