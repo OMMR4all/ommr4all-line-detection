@@ -139,12 +139,12 @@ class LineDetection(LineDetector):
             if self.settings.smooth_lines == 2:
                 staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
 
-        staff_list = prune_points_in_line(staff_list, self.settings.keep_start_and_end)
+        staff_list = prune_points_in_line(staff_list, self.settings.smooth_approximate)
 
         # Debug
         if self.settings.debug:
             im = plt.imread(image_data.path)
-            f, ax = plt.subplots(1, 3, True, True)
+            f, ax = plt.subplots(1, 2, True, True)
             ax[0].imshow(binarize(im), cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
@@ -154,11 +154,12 @@ class LineDetection(LineDetector):
                     ax[0].plot(x, y, color=color)
                     ax[0].plot(x, y, "bo")
 
-            ax[1].imshow(img, cmap='gray')
-            ax[2].imshow(im, cmap='gray')
-            for staff in staff2:
-                y, x = zip(*staff)
-                ax[2].plot(x, y, 'r')
+            ax[1].imshow(im, cmap='gray')
+            for system, color in zip(staff_list, colors):
+                for staff in system:
+                    y, x = zip(*staff)
+                    ax[1].plot(x, y, color=color)
+                    ax[1].plot(x, y, "bo")
             plt.show()
         return staff_list
 

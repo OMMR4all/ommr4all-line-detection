@@ -32,7 +32,7 @@ class LineDetectionSettings:
     smooth_value_lowpass: float = 5
     smooth_value_adv: int = 25
     smooth_lines_advdebug: bool = False
-    keep_start_and_end: bool = True
+    smooth_approximate: bool = True
     model: Optional[str] = None
     processes: int = 12
 
@@ -444,15 +444,16 @@ def interpolate_sequence(x_list, y_list):
     return x_list_new, y_list_new
 
 
-def prune_points_in_line(stafflist):
+def prune_points_in_line(stafflist, cluster_point : bool):
     new_stafflist = []
     for system in stafflist:
         new_system = []
         for line in system:
             y, x = map(list, zip(*line))
             prune_lines(x, y)
+            if cluster_point:
+                cluster_points(x, y, 25)
             line = list(zip(y, x))
-
             new_system.append(line)
         new_stafflist.append(new_system)
     return new_stafflist
@@ -468,6 +469,25 @@ def prune_lines(x ,y):
                 del y[z]
                 del x[z]
                 pruning = True
+                break
+
+
+def cluster_points(x, y, window = 50):
+    for i in range(2, window):
+        for z in range(len(x) - 2):
+            if x[z + 2] - x[z] < i:
+                del x[z + 1]
+                del y[z + 1]
+                break
+
+    cluster = True
+    while cluster:
+        cluster = False
+        for i in range(len(x) - 1):
+            if x[i + 1] - x[i] < 3:
+                del x[i]
+                del y[i]
+                cluster = True
                 break
 
 
