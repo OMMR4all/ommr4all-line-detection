@@ -152,6 +152,8 @@ class LineDetection(LineDetector):
                 for staff in system:
                     y, x = zip(*staff)
                     ax[0].plot(x, y, color=color)
+                    ax[0].plot(x, y, "bo")
+
             ax[1].imshow(img, cmap='gray')
             ax[2].imshow(im, cmap='gray')
             for staff in staff2:

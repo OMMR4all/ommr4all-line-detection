@@ -372,8 +372,11 @@ class LineDetector():
                 x = list(x)
                 y = list(y)
                 x, y = interpolate_sequence(x, y)
-                remove_hill(y, smooth_value)
-                line = list(zip(y, x))
+                append_start = [y[0] for x in range(10)]
+                append_end = [y[-1] for x in range(10)]
+                m_y = append_start + y + append_end
+                remove_hill(m_y, smooth_value)
+                line = list(zip(m_y[10:-10], x))
                 new_system.append(line)
             new_stafflines.append(new_system)
 
@@ -441,37 +444,40 @@ def interpolate_sequence(x_list, y_list):
     return x_list_new, y_list_new
 
 
-def prune_points_in_line(stafflist, keep_start_and_end=False):
+def prune_points_in_line(stafflist):
     new_stafflist = []
     for system in stafflist:
         new_system = []
         for line in system:
-            y, x = zip(*line)
-            new_x, new_y = [], []
-            prev = None
-            for ind, i in enumerate(y):
-                if prev != i:
-                    if keep_start_and_end and ind != 0:
-                        new_x.append(x[ind - 1])
-                        new_y.append(y[ind - 1])
-                    new_x.append(x[ind])
-                    new_y.append(y[ind])
-                    prev = i
-            new_x.append(x[-1])
-            new_y.append(y[-1])
-            if new_x[0] == new_x[1]:
-                del new_x[0]
-                del new_y[0]
-            line = list(zip(new_y, new_x))
+            y, x = map(list, zip(*line))
+            prune_lines(x, y)
+            line = list(zip(y, x))
 
             new_system.append(line)
         new_stafflist.append(new_system)
     return new_stafflist
 
 
+def prune_lines(x ,y):
+    pruning = True
+    while pruning:
+        pruning = False
+        for i in range(len(y) - 2):
+            z = i + 1
+            if y[i] / y[z] == y[z] / y[z + 1]:
+                del y[z]
+                del x[z]
+                pruning = True
+                break
+
+
+
 if __name__ == "__main__":
     y = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9]
+    x = [i for i in range(len(y))]
     print('Start')
     remove_hill(y,15)
     print(y)
-
+    prune_lines(x, y)
+    print(y)
+    print(x)
