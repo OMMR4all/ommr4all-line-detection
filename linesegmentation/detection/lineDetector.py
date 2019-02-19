@@ -32,7 +32,7 @@ class LineDetectionSettings:
     smooth_value_lowpass: float = 5
     smooth_value_adv: int = 25
     smooth_lines_advdebug: bool = False
-    smooth_approximate: bool = True
+    line_fit_distance: float = 0.5
     model: Optional[str] = None
     processes: int = 12
 
@@ -444,60 +444,66 @@ def interpolate_sequence(x_list, y_list):
     return x_list_new, y_list_new
 
 
-def prune_points_in_line(stafflist, cluster_point : bool):
+def line_fitting(stafflist, dist=0.5):
     new_stafflist = []
     for system in stafflist:
         new_system = []
         for line in system:
-            y, x = map(list, zip(*line))
-            prune_lines(x, y)
-            if cluster_point:
-                cluster_points(x, y, 25)
-            line = list(zip(y, x))
-            new_system.append(line)
+            line = np.flip(np.asarray(line), axis=-1)
+            simplified = ramerdouglas(line.tolist(), dist=dist)
+            simplified = np.flip(np.asarray(simplified), axis=-1)
+            new_system.append(simplified.tolist())
         new_stafflist.append(new_system)
     return new_stafflist
 
 
-def prune_lines(x ,y):
-    pruning = True
-    while pruning:
-        pruning = False
-        for i in range(len(y) - 2):
-            z = i + 1
-            if y[i] / y[z] == y[z] / y[z + 1]:
-                del y[z]
-                del x[z]
-                pruning = True
-                break
+def _vec2d_dist(p1, p2):
+    return (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
 
 
-def cluster_points(x, y, window = 50):
-    for i in range(2, window):
-        for z in range(len(x) - 2):
-            if x[z + 2] - x[z] < i:
-                del x[z + 1]
-                del y[z + 1]
-                break
+def _vec2d_sub(p1, p2):
+    return (p1[0]-p2[0], p1[1]-p2[1])
 
-    cluster = True
-    while cluster:
-        cluster = False
-        for i in range(len(x) - 1):
-            if x[i + 1] - x[i] < 3:
-                del x[i]
-                del y[i]
-                cluster = True
-                break
+
+def _vec2d_mult(p1, p2):
+    return p1[0]*p2[0] + p1[1]*p2[1]
+
+
+def ramerdouglas(line, dist):
+    """Does Ramer-Douglas-Peucker simplification of a curve with `dist`
+    threshold.
+    https://stackoverflow.com/questions/2573997/reduce-number-of-points-in-line
+    `line` is a list-of-tuples, where each tuple is a 2D coordinate
+
+    Usage is like so:
+
+    myline = [(0.0, 0.0), (1.0, 2.0), (2.0, 1.0)]
+    simplified = ramerdouglas(myline, dist = 1.0)
+    """
+
+    if len(line) < 3:
+        return line
+
+    (begin, end) = (line[0], line[-1]) if line[0] != line[-1] else (line[0], line[-2])
+
+    distSq = []
+    for curr in line[1:-1]:
+        tmp = (
+            _vec2d_dist(begin, curr) - _vec2d_mult(_vec2d_sub(end, begin), _vec2d_sub(curr, begin)) ** 2 / _vec2d_dist(begin, end))
+        distSq.append(tmp)
+
+    maxdist = max(distSq)
+    if maxdist < dist ** 2:
+        return [begin, end]
+
+    pos = distSq.index(maxdist)
+    return (ramerdouglas(line[:pos + 2], dist) +
+            ramerdouglas(line[pos + 1:], dist)[1:])
 
 
 
 if __name__ == "__main__":
     y = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9]
     x = [i for i in range(len(y))]
-    print('Start')
-    remove_hill(y,15)
-    print(y)
-    prune_lines(x, y)
     print(y)
     print(x)

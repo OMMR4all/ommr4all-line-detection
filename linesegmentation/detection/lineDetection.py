@@ -10,7 +10,8 @@ from PIL import Image
 from matplotlib import pyplot as plt
 # project specific imports
 from scipy.ndimage.morphology import binary_erosion, binary_dilation
-from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data, prune_points_in_line
+from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data, \
+    line_fitting
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, normalize_connected_components
@@ -139,7 +140,7 @@ class LineDetection(LineDetector):
             if self.settings.smooth_lines == 2:
                 staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
 
-        staff_list = prune_points_in_line(staff_list, self.settings.smooth_approximate)
+        staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
 
         # Debug
         if self.settings.debug:
@@ -166,7 +167,7 @@ class LineDetection(LineDetector):
 
 if __name__ == "__main__":
     import os
-    setting_predictor = LineDetectionSettings(debug=True, smooth_lines_advdebug=True, post_process=True, smooth_lines=2)
+    setting_predictor = LineDetectionSettings(debug=True, smooth_lines_advdebug=True, post_process=True, smooth_lines=2, line_fit_distance=1.0)
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
