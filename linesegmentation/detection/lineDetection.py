@@ -150,9 +150,8 @@ class LineDetection(LineDetector):
 
         # Debug
         if self.settings.debug:
-            im = plt.imread(image_data.path)
             f, ax = plt.subplots(1, 2, True, True)
-            ax[0].imshow(binarize(im), cmap='gray')
+            ax[0].imshow(binarize(image_data.image), cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
             for system, color in zip(staff_list, colors):
@@ -161,7 +160,7 @@ class LineDetection(LineDetector):
                     ax[0].plot(x, y, color=color)
                     ax[0].plot(x, y, "bo")
 
-            ax[1].imshow(im, cmap='gray')
+            ax[1].imshow(image_data.image, cmap='gray')
             for system, color in zip(staff_list, colors):
                 for staff in system:
                     y, x = zip(*staff)
@@ -177,5 +176,5 @@ if __name__ == "__main__":
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect([page_path]):
+    for _pred in line_detector.detect_paths([page_path]):
         pass
