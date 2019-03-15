@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    gray_image = np.array(Image.open(page_path)) / 255
+    gray_image = np.array(Image.open(page_path)) / 255.0
     enhanced_image = enhance(gray_image)
     f, ax = plt.subplots(1, 2, True, True)
     ax[0].imshow(gray_image, cmap='gray')

@@ -49,18 +49,11 @@ def get_blackness_of_line(line, image):
     return blackness
 
 
-def create_data(path, line_space_height, load_image = False):
+def create_data(image: np.ndarray, line_space_height):
     space_height = line_space_height
-    image = None
     if line_space_height == 0:
-        image = np.array(Image.open(path)) / 255
         space_height = vertical_runs(binarize(image))[0]
-    image_data = ImageData(path=path, height=space_height)
-    if load_image:
-        if line_space_height != 0:
-            image = np.array(Image.open(path)) / 255
-        image_data.image = image
-
+    image_data = ImageData(height=space_height, image=image.astype(float) / 255)
     return image_data
 
 

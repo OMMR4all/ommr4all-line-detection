@@ -39,14 +39,20 @@ class LineDetection(LineDetector):
         """
         super().__init__(settings)
 
-    def detect(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
+    def detect_paths(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
+        def read_img(path):
+            return np.array(Image.open(path))
+
+        return self.detect(list(map(read_img, image_paths)))
+
+    def detect(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
         """
         Function  to detect die stafflines in an image
 
         Parameters
         ----------
-        image_paths: List[str]
-            Paths to the images, which should be processed
+        images: List[np.ndarray]
+            Raw gray scale image in range [0, 255], which should be processed
 
         Yields
         ------
@@ -71,14 +77,14 @@ class LineDetection(LineDetector):
                      ]    
         """
         if not self.settings.model:
-            return self.detect_basic(image_paths)
+            return self.detect_basic(images)
         else:
-            return self.detect_advanced(image_paths)
+            return self.detect_advanced(images)
 
-    def detect_basic(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
-        for img_path in image_paths:
-            image_data = ImageData(path=img_path)
-            image_data.image = np.array(Image.open(img_path)) / 255
+    def detect_basic(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
+        for img in images:
+            image_data = ImageData()
+            image_data.image = img.astype(float) / 255
             gray = image_data.image
             if np.sum(np.histogram(gray)[0][1:-2]) != 0:
                 gray = enhance(image_data.image)
@@ -91,15 +97,15 @@ class LineDetection(LineDetector):
             image_data.horizontal_runs_img = calculate_horizontal_runs((1 - staffs), self.settings.minLength)
             yield self.detect_staff_lines(image_data)
 
-    def detect_advanced(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
+    def detect_advanced(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
 
-        create_data_partital = partial(create_data, line_space_height=self.settings.lineSpaceHeight, load_image=True)
+        create_data_partital = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
-            data = [v for v in tqdm.tqdm(p.imap(create_data_partital, image_paths), total=len(image_paths))]
+            data = [v for v in tqdm.tqdm(p.imap(create_data_partital, images), total=len(images))]
 
         for i, pred in enumerate(self.predictor.predict(data)):
             pred[pred > 0] = 255
-            data[i].staff_space_height, data[i].staff_line_height = vertical_runs(binarize(data[i].image))
+            data[i].staff_space_height, data[i].staff_line_height = vertical_runs(binarize(data[i].image.astype(float) / 255))
             data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)), self.settings.minLength)
             yield self.detect_staff_lines(data[i])
 
@@ -145,9 +151,8 @@ class LineDetection(LineDetector):
 
         # Debug
         if self.settings.debug:
-            im = plt.imread(image_data.path)
             f, ax = plt.subplots(1, 2, True, True)
-            ax[0].imshow(binarize(im), cmap='gray')
+            ax[0].imshow(binarize(image_data.image), cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
             for system, color in zip(staff_list, colors):
@@ -156,7 +161,7 @@ class LineDetection(LineDetector):
                     ax[0].plot(x, y, color=color)
                     #ax[0].plot(x, y, "bo")
 
-            ax[1].imshow(im, cmap='gray')
+            ax[1].imshow(image_data.image, cmap='gray')
             for system, color in zip(staff_list, colors):
                 for staff in system:
                     y, x = zip(*staff)
@@ -172,5 +177,5 @@ if __name__ == "__main__":
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect([page_path]):
+    for _pred in line_detector.detect_paths([page_path]):
         pass
