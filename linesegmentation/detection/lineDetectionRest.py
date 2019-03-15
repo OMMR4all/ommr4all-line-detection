@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 from functools import partial
 from matplotlib import pyplot as plt
-from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, create_data, ImageData
+from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, create_data, ImageData, line_fitting
 from linesegmentation.detection.lineDetectionUtil import get_text_borders, vertical_runs, calculate_horizontal_runs
 from pagesegmentation.lib.predictor import PredictSettings
 from linesegmentation.pixelclassifier.predictor import PCPredictor
@@ -111,12 +111,20 @@ class LineDetectionRest(LineDetector):
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
 
         else:
-            staff_list = line_list
+            staff_list = [[x] for x in line_list]
+
+        if self.settings.smooth_lines != 0:
+            if self.settings.smooth_lines == 1:
+                staff_list = self.smooth_lines(staff_list, self.settings.smooth_value_lowpass)
+            if self.settings.smooth_lines == 2:
+                staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
+
+        staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
 
         # Debug
         if self.settings.debug:
             im = plt.imread(image_data.path)
-            f, ax = plt.subplots(1, 3, True, True)
+            f, ax = plt.subplots(1, 2, True, True)
             ax[0].imshow(im, cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
@@ -125,10 +133,6 @@ class LineDetectionRest(LineDetector):
                     y, x = zip(*staff)
                     ax[0].plot(x, y, color=color)
             ax[1].imshow(img, cmap='gray')
-            ax[2].imshow(im, cmap='gray')
-            for staff in staff2:
-                y, x = zip(*staff)
-                ax[2].plot(x, y, 'r')
             plt.show()
         return staff_list
 
@@ -140,13 +144,10 @@ if __name__ == "__main__":
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-427.nrm.png')
     model_line = os.path.join(project_dir, 'demo/models/line/model')
     model_region = os.path.join(project_dir, 'demo/models/region/model')
-    settings_prediction = LineDetectionSettings(debug=True, minLineNum=2, numLine=6, lineSpaceHeight=20
-                                                ,targetLineSpaceHeight=10,
+    settings_prediction = LineDetectionSettings(debug=True, minLineNum=1, numLine=1, lineSpaceHeight=20
+                                                ,targetLineSpaceHeight=10, smooth_lines=2, line_fit_distance=1.0,
                                      model=model_line)
-
     line_detector = LineDetectionRest(settings_prediction, model_region)
-    data = [page_path]
 
-    for _pred in line_detector.detect_advanced(
-            data):
+    for _pred in line_detector.detect_advanced([page_path]):
         pass

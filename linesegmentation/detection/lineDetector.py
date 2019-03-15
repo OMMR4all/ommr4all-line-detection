@@ -230,6 +230,8 @@ class LineDetector():
             ymi, xmi = zip(*z[min_index_sxs])
             minf = interpolate.interp1d(xmi, ymi, fill_value='extrapolate')
             yma, xma = zip(*z[max_index_exs])
+            if len(xma) < 2:
+                continue
             maxf = interpolate.interp1d(xma, yma, fill_value='extrapolate')
 
             for line_ind, line in enumerate(z):
@@ -299,7 +301,6 @@ class LineDetector():
                 x_start, x_end = min(x), max(x)
                 dict_count = defaultdict(list)
                 for i in range(x_start, x_end):
-
                     st_point = int(f(i))
                     if image[st_point][i] != 0:
                         for z in range(1, l2 + 1):
@@ -371,6 +372,8 @@ class LineDetector():
                 y, x = zip(*line)
                 x = list(x)
                 y = list(y)
+                if len(x) < 2:
+                    continue
                 x, y = interpolate_sequence(x, y)
                 append_start = [y[0] for x in range(10)]
                 append_end = [y[-1] for x in range(10)]

@@ -127,7 +127,7 @@ class LineDetection(LineDetector):
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
 
         else:
-            staff_list = line_list
+            staff_list = [[x] for x in line_list]
 
         if self.settings.post_process:
             staff_list = self.postprocess_staff_systems(staff_list, staff_line_height, binarize(image_data.image))
@@ -140,7 +140,8 @@ class LineDetection(LineDetector):
             if self.settings.smooth_lines == 2:
                 staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
 
-        staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
+        if self.settings.line_fit_distance > 0:
+            staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
 
         # Debug
         if self.settings.debug:
@@ -153,7 +154,7 @@ class LineDetection(LineDetector):
                 for staff in system:
                     y, x = zip(*staff)
                     ax[0].plot(x, y, color=color)
-                    ax[0].plot(x, y, "bo")
+                    #ax[0].plot(x, y, "bo")
 
             ax[1].imshow(im, cmap='gray')
             for system, color in zip(staff_list, colors):
