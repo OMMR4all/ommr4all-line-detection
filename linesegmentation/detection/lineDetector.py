@@ -295,8 +295,9 @@ class LineDetector():
                 dict_count = defaultdict(list)
                 for i in range(x_start, x_end):
                     st_point = int(f(i))
+                    max_l2 = min(abs(st_point - image.shape[0]), l2 + 1)
                     if image[st_point][i] != 0:
-                        for z in range(1, l2 + 1):
+                        for z in range(1, max_l2):
                             if image[st_point - z][i] == 0:
                                 st_point = st_point - z
                                 break
