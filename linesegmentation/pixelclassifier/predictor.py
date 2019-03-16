@@ -18,6 +18,8 @@ class PCPredictor:
             [SingleData(binary=i.image, image=i.image, line_height_px= i.height) for i in images]
         )
         for i, pred in enumerate(self.predictor.predict(data)):
-            pred = misc.imresize(pred[0][pred[2].xpad:, pred[2].ypad:], pred[2].original_shape, interp="nearest")
+            # get the probability map for 'foreground' and resize it to the original shape
+            prob = pred.probabilities[pred[2].xpad:, pred[2].ypad:][:, :, 1]
+            pred = misc.imresize(prob, pred[2].original_shape) / 255.0
             yield pred
 
