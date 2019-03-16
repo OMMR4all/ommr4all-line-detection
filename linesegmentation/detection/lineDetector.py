@@ -1,7 +1,7 @@
 # misc imports
 import os
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, NamedTuple
 import numpy as np
 import math
 # project specific imports
@@ -17,8 +17,7 @@ from collections import defaultdict
 from matplotlib import pyplot as plt
 
 
-@dataclass
-class LineDetectionSettings:
+class LineDetectionSettings(NamedTuple):
     numLine: int = 4
     minLineNum: int = 3
     minLength: int = 6
@@ -34,6 +33,8 @@ class LineDetectionSettings:
     smooth_lines_advdebug: bool = False
     line_fit_distance: float = 0.5
     model: Optional[str] = None
+    model_foreground_threshold = 0.5
+    debug_model = False
     processes: int = 12
 
 
@@ -51,9 +52,10 @@ def get_blackness_of_line(line, image):
 
 def create_data(image: np.ndarray, line_space_height):
     space_height = line_space_height
+    norm_img = image.astype(np.float32) / 255
     if line_space_height == 0:
-        space_height = vertical_runs(binarize(image))[0]
-    image_data = ImageData(height=space_height, image=image.astype(float) / 255)
+        space_height = sum(vertical_runs(binarize(norm_img)))
+    image_data = ImageData(height=space_height, image=norm_img)
     return image_data
 
 

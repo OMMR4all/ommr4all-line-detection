@@ -98,15 +98,20 @@ class LineDetection(LineDetector):
             yield self.detect_staff_lines(image_data)
 
     def detect_advanced(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
-
         create_data_partital = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partital, images), total=len(images))]
 
-        for i, pred in enumerate(self.predictor.predict(data)):
-            pred[pred > 0] = 255
+        for i, prob in enumerate(self.predictor.predict(data)):
+            pred = (prob > self.settings.model_foreground_threshold)
             data[i].staff_space_height, data[i].staff_line_height = vertical_runs(binarize(data[i].image.astype(float) / 255))
-            data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)), self.settings.minLength)
+            data[i].horizontal_runs_img = calculate_horizontal_runs(1 - pred, self.settings.minLength)
+            if self.settings.debug_model:
+                f, ax = plt.subplots(1, 3, sharex='all', sharey='all')
+                ax[0].imshow(prob)
+                ax[1].imshow(pred)
+                ax[2].imshow(data[i].horizontal_runs_img)
+                plt.show()
             yield self.detect_staff_lines(data[i])
 
     def detect_staff_lines(self, image_data: ImageData):
