@@ -181,8 +181,8 @@ class LineDetector():
         staff_list = []
         for z in staffindices:
             system = []
-            for x in z:
-                system.append(line_list[x])
+            for xt in z:
+                system.append(line_list[xt])
             staff_list.append(system)
         return staff_list
 
@@ -328,6 +328,11 @@ class LineDetector():
                         processed_staff.append([np.mean(dict_count[key]), key])
                 procssed_system.append(processed_staff)
             post_processed_staff_systems.append(procssed_system)
+
+        for system_ind, system in enumerate(post_processed_staff_systems):
+            post_processed_staff_systems[system_ind] = [lin for lin in system if lin]
+        post_processed_staff_systems = [sys for sys in post_processed_staff_systems if sys]
+
 
         if self.settings.post_process_debug:
             f, ax = plt.subplots(1, 2, True, True)
