@@ -174,8 +174,9 @@ class LineDetection(LineDetector):
 if __name__ == "__main__":
     import os
     setting_predictor = LineDetectionSettings(debug=True, smooth_lines_advdebug=True, post_process=True, smooth_lines=2, line_fit_distance=1.0)
+    bug = '/home/alexanderh/Schreibtisch/git/bug.png'
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect_paths([page_path]):
+    for _pred in line_detector.detect_paths([bug]):
         pass
