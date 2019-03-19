@@ -221,10 +221,11 @@ class LineDetector():
             min_index_sxs, sxb = sxs.index(min(sxs)), min(sxs)
             max_index_exs, exb = exs.index(max(exs)), max(exs)
             ymi, xmi = zip(*z[min_index_sxs])
-            minf = interpolate.interp1d(xmi, ymi, fill_value='extrapolate')
             yma, xma = zip(*z[max_index_exs])
-            if len(xma) < 2:
+            if len(xmi) < 2 or len(xma) < 2:
                 continue
+
+            minf = interpolate.interp1d(xmi, ymi, fill_value='extrapolate')
             maxf = interpolate.interp1d(xma, yma, fill_value='extrapolate')
 
             for line_ind, line in enumerate(z):
