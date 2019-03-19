@@ -215,6 +215,7 @@ class LineDetector():
         return staff_list
 
     def normalize_lines_in_system(self, staff_list, staff_space_height, img):
+
         for z_ind, z in enumerate(staff_list):
             sxs = [line[0][1] for line in z]
             exs = [line[-1][1] for line in z]
@@ -225,8 +226,8 @@ class LineDetector():
             if len(xmi) < 2 or len(xma) < 2:
                 continue
 
-            minf = interpolate.interp1d(xmi, ymi, fill_value='extrapolate')
-            maxf = interpolate.interp1d(xma, yma, fill_value='extrapolate')
+            minf = interpolate.interp1d(xmi, ymi, fill_value=(ymi[0], ymi[-1]), bounds_error=False)
+            maxf = interpolate.interp1d(xma, yma, fill_value=(yma[0], yma[-1]), bounds_error=False)
 
             for line_ind, line in enumerate(z):
                 y, x = zip(*line)
