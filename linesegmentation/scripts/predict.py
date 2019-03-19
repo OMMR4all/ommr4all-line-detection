@@ -1,6 +1,6 @@
 import argparse
 import glob
-from lib.detection.lineDetection import LineDetection, LineDetectionSettings
+from linesegmentation.detection.lineDetection import LineDetection, LineDetectionSettings
 import tqdm
 
 
@@ -20,8 +20,9 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Detects music lines in historical documents')
     parser.add_argument("--load", type=str,
                         help="Model to load")
     parser.add_argument("--space_height", type=int, default=20,
@@ -31,11 +32,23 @@ def main():
     parser.add_argument("--gray", type=str, required=True, nargs="+",
                         help="directory name of the grayscale images")
     parser.add_argument("--num_line", type=int, default=4,
-                        help="number of lines in a system")
+                        help="number of lines in a system. Can also be set to 0")
     parser.add_argument("--min_hrun_lengths", type= int, default=6,
                        help="Minimum allowed horizontal run lengths")
     parser.add_argument("--interpolate", type= str2bool, default=True,
-                       help="Minimum allowed horizontal run lengths")
+                       help="Line extension through interpolation")
+    parser.add_argument("--post_process", type=str2bool, default=True,
+                        help="Post processing line systems ")
+    parser.add_argument("--smooth_lines", type=int, default=2,
+                        help="0 = Off, 1 = basic Smoothing (low pass filter), 2 = Advanced Smoothing (slower)")
+    parser.add_argument("--smooth_value_adv", type=int, default=25,
+                        help="Advanced smooth value")
+    parser.add_argument("--smooth_value_lowpass", type=int, default=5,
+                        help="Low_pass_filter smooth value")
+    parser.add_argument("--line_fit_distance", type=float, default=1.0,
+                        help="Line simplification. Higher values simplifies lines more")
+    parser.add_argument("--processes", type=int, default=8,
+                        help="Number of processes to use")
     parser.add_argument("--debug", type=str2bool, default=False,
                        help="Display debug images")
     args = parser.parse_args()
@@ -44,13 +57,20 @@ def main():
     print("Loading {} files with character height {}".format(len(gray_file_paths), args.space_height))
 
     settings = LineDetectionSettings(
-        numLine = args.num_line,
-        minLength = args.min_hrun_lengths,
-        lineExtension = args.interpolate,
-        debug = args.debug,
-        lineSpaceHeight = args.space_height,
-        targetLineSpaceHeight = args.target_line_height,
-        model = args.load
+        numLine=args.num_line,
+        minLength=args.min_hrun_lengths,
+        lineExtension=args.interpolate,
+        debug=args.debug,
+        lineSpaceHeight=args.space_height,
+        targetLineSpaceHeight=args.target_line_height,
+        model=args.load,
+        post_process=args.post_process,
+        smooth_lines=args.smooth_lines,
+        line_fit_distance=args.line_fit_distance,
+        processes=args.processes,
+        smooth_value_lowpass=args.smooth_value_lowpass,
+        smooth_value_adv=args.smooth_value_adv
+
     )
 
     lineDetector = LineDetection(settings)
