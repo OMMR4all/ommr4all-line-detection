@@ -9,9 +9,9 @@ from linesegmentation.detection.lineDetector import LineDetector, LineDetectionS
 from linesegmentation.detection.lineDetectionUtil import get_text_borders, vertical_runs, calculate_horizontal_runs
 from pagesegmentation.lib.predictor import PredictSettings
 from linesegmentation.pixelclassifier.predictor import PCPredictor
-from typing import List
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, normalize_connected_components
+from typing import List, Generator
 
 
 class LineDetectionRest(LineDetector):
@@ -26,6 +26,12 @@ class LineDetectionRest(LineDetector):
                 high_res_output=False
             )
             self.text_predictor = PCPredictor(pc_settings_text, settings.targetLineSpaceHeight)
+
+    def detect_paths(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
+        def read_img(path):
+            return np.array(Image.open(path))
+
+        return self.detect_advanced(list(map(read_img, image_paths)))
 
     def detect_advanced(self, image_paths: List[str]):
         create_data_partial = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
@@ -123,9 +129,8 @@ class LineDetectionRest(LineDetector):
 
         # Debug
         if self.settings.debug:
-            im = plt.imread(image_data.path)
             f, ax = plt.subplots(1, 2, True, True)
-            ax[0].imshow(im, cmap='gray')
+            ax[0].imshow(image_data.image, cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
             for system, color in zip(staff_list, colors):
@@ -144,10 +149,10 @@ if __name__ == "__main__":
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-427.nrm.png')
     model_line = os.path.join(project_dir, 'demo/models/line/model')
     model_region = os.path.join(project_dir, 'demo/models/region/model')
-    settings_prediction = LineDetectionSettings(debug=True, minLineNum=1, numLine=1, lineSpaceHeight=20
+    settings_prediction = LineDetectionSettings(debug=True, minLineNum=1, numLine=4, lineSpaceHeight=20
                                                 ,targetLineSpaceHeight=10, smooth_lines=2, line_fit_distance=1.0,
                                      model=model_line)
     line_detector = LineDetectionRest(settings_prediction, model_region)
 
-    for _pred in line_detector.detect_advanced([page_path]):
+    for _pred in line_detector.detect_paths([page_path]):
         pass
