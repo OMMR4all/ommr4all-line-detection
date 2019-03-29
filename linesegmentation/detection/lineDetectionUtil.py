@@ -53,8 +53,7 @@ def vertical_runs(img: np.array):
     black_r = np.argmax(black_runs) + 1
     # on pages with a lot of text the staffspaceheigth can be falsified.
     # --> skip the first elements of the array, we expect the staff lines distance to be at least twice the line height
-    white_r = np.argmax(white_runs[black_r * 2:]) + 1 + black_r * 2
-    img = np.transpose(img)
+    white_r = np.argmax(white_runs[black_r * 3:]) + 1 + black_r * 3
     return white_r, black_r
 
 
