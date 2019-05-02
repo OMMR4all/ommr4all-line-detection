@@ -43,9 +43,10 @@ def get_blackness_of_line(line, image):
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = x_list[0], x_list[-1]
     spaced_numbers = np.linspace(x_start, x_end, num=int(abs(x_list[0] - x_list[-1]) * 1 / 5), endpoint=True)
+    y_new = func(spaced_numbers)
     blackness = 0
-    for number in spaced_numbers:
-        if image[int(func(number))][int(number)] == 255:
+    for ind, number in enumerate(y_new):
+        if image[int(number)][int(spaced_numbers[ind])] == 255:
             blackness += 1
     return blackness
 
@@ -53,9 +54,13 @@ def get_blackness_of_line(line, image):
 def create_data(image: np.ndarray, line_space_height):
     space_height = line_space_height
     norm_img = image.astype(np.float32) / 255
+    staff_space_height = None
+    staff_line_height = None
     if line_space_height == 0:
-        space_height = sum(vertical_runs(binarize(norm_img)))
-    image_data = ImageData(height=space_height, image=norm_img)
+        staff_space_height, staff_line_height = sum(vertical_runs(binarize(norm_img)))
+        space_height = sum(staff_space_height, staff_line_height)
+    image_data = ImageData(height=space_height, image=norm_img, staff_line_height = staff_line_height,
+                           staff_space_height = staff_space_height)
     return image_data
 
 
@@ -285,6 +290,7 @@ class LineDetector():
                     break
         return staff_list
 
+
     def postprocess_staff_systems(self, staffs_lines, line_height, image):
         post_processed_staff_systems = []
         h = image.shape[0]
@@ -294,36 +300,35 @@ class LineDetector():
             procssed_system = []
             for staff in system:
                 y, x = zip(*staff)
-                f = interpolate.interp1d(x, y)
-                x_start, x_end = min(x), max(x)
+                x_new, y_new = interpolate_sequence(x, y)
                 dict_count = defaultdict(list)
-                for i in range(x_start, x_end):
-                    st_point = min(int(f(i)), image.shape[0] - 1)
+                for i_ind, i in enumerate(y_new):
+                    st_point = min(i, image.shape[0] - 1)
 
                     max_l2 = min(abs(st_point - image.shape[0]), l2 + 1)
-                    if image[st_point][i] != 0:
+                    if image[st_point][x_new[i_ind]] != 0:
                         for z in range(1, max_l2):
-                            if image[st_point - z][i] == 0:
+                            if image[st_point - z][x_new[i_ind]] == 0:
                                 st_point = st_point - z
                                 break
-                            if image[st_point + z][i] == 0:
+                            if image[st_point + z][x_new[i_ind]] == 0:
                                 st_point = st_point + z
                                 break
                     yt = st_point
                     yb = st_point
 
-                    if image[yt][i] == 0:
-                        dict_count[i].append(yt)
+                    if image[yt][x_new[i_ind]] == 0:
+                        dict_count[x_new[i_ind]].append(yt)
                         while yt < h - 1:
                             yt += 1
-                            if image[yt][i] == 0:
-                                dict_count[i].append(yt)
+                            if image[yt][x_new[i_ind]] == 0:
+                                dict_count[x_new[i_ind]].append(yt)
                             else:
                                 break
                         while yb > 0:
                             yb -= 1
-                            if image[yb][i] == 0:
-                                dict_count[i].append(yb)
+                            if image[yb][x_new[i_ind]] == 0:
+                                dict_count[x_new[i_ind]].append(yb)
                             else:
                                 break
                 processed_staff = []
@@ -336,7 +341,6 @@ class LineDetector():
         for system_ind, system in enumerate(post_processed_staff_systems):
             post_processed_staff_systems[system_ind] = [lin for lin in system if lin]
         post_processed_staff_systems = [sys for sys in post_processed_staff_systems if sys]
-
 
         if self.settings.post_process_debug:
             f, ax = plt.subplots(1, 2, True, True)
@@ -378,6 +382,7 @@ class LineDetector():
                 y = list(y)
                 if len(x) < 2:
                     continue
+
                 x, y = interpolate_sequence(x, y)
                 append_start = [y[0] for x in range(10)]
                 append_end = [y[-1] for x in range(10)]
@@ -441,14 +446,10 @@ def remove_hill(y, smooth=25):
 
 
 def interpolate_sequence(x_list, y_list):
-    func = interpolate.interp1d(x_list, y_list)
-    x_start, x_end = x_list[0], x_list[-1]
-    x_list_new = []
-    y_list_new = []
-    for i in range(x_start, x_end + 1):
-        x_list_new.append(i)
-        y_list_new.append(int(math.floor(func(i) + 0.5)))
-    return x_list_new, y_list_new
+    x_list_new = range(x_list[0], x_list[-1])
+    y_list_new = np.interp(x_list_new, x_list, y_list)
+
+    return x_list_new, list((np.floor(y_list_new + 0.5).astype(int)))
 
 
 def line_fitting(stafflist, dist=0.5):
