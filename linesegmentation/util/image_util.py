@@ -65,6 +65,6 @@ if __name__ == "__main__":
         for system, color in zip(_pred, colors):
             for staff in system:
                 y, x = zip(*staff)
-                y = smooth_array(list(y), 1.3)
+                y = smooth_array(list(y), 5)
                 ax[1].plot(x, y, color=color)
         plt.show()

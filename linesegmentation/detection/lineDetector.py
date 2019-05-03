@@ -8,13 +8,13 @@ import math
 from pagesegmentation.lib.predictor import PredictSettings
 from scipy.interpolate import interpolate
 from linesegmentation.pixelclassifier.predictor import PCPredictor
-from PIL import Image
-from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
+#from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.detection.lineDetectionUtil import vertical_runs
 from linesegmentation.datatypes.datatypes import ImageData
 from linesegmentation.util.image_util import smooth_array
 from collections import defaultdict
 from matplotlib import pyplot as plt
+from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
 
 
 class LineDetectionSettings(NamedTuple):
@@ -56,11 +56,12 @@ def create_data(image: np.ndarray, line_space_height):
     norm_img = image.astype(np.float32) / 255
     staff_space_height = None
     staff_line_height = None
+    binary_image = gauss_threshold(image) / 255
     if line_space_height == 0:
-        staff_space_height, staff_line_height = sum(vertical_runs(binarize(norm_img)))
+        staff_space_height, staff_line_height = sum(vertical_runs(binary_image))
         space_height = sum(staff_space_height, staff_line_height)
-    image_data = ImageData(height=space_height, image=norm_img, staff_line_height = staff_line_height,
-                           staff_space_height = staff_space_height)
+    image_data = ImageData(height=space_height, image=norm_img, staff_line_height=staff_line_height,
+                           staff_space_height=staff_space_height, binary_image=binary_image)
     return image_data
 
 

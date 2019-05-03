@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-427.nrm.png')
-    model_line = os.path.join(project_dir, 'demo/models/line/model')
+    model_line = os.path.join(project_dir, 'demo/models/line/virtual_lines/model')
     model_region = os.path.join(project_dir, 'demo/models/region/model')
     settings_prediction = LineDetectionSettings(debug=True, minLineNum=1, numLine=4, lineSpaceHeight=20
                                                 ,targetLineSpaceHeight=10, smooth_lines=2, line_fit_distance=1.0,
