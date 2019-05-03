@@ -158,7 +158,7 @@ class LineDetection(LineDetector):
             if self.settings.smooth_lines == 1:
                 staff_list = self.smooth_lines(staff_list)
             if self.settings.smooth_lines == 2:
-                staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
+                staff_list = self.smooth_lines_advanced(staff_list)
 
         if self.settings.line_fit_distance > 0:
             staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
