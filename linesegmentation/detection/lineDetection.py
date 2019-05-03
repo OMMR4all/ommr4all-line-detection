@@ -163,8 +163,9 @@ class LineDetection(LineDetector):
         if self.settings.line_fit_distance > 0:
             staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
 
+        staff_list2= staff_list.copy()
 
-
+        staff_list = self.best_fit_systems(staff_list, image_data.image, staff_line_height)
 
         # Debug
         if self.settings.debug:
@@ -172,11 +173,11 @@ class LineDetection(LineDetector):
             ax[0].imshow(binary_image, cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
-            for system, color in zip(staff_list, colors):
+            for system, color in zip(staff_list2, colors):
                 for staff in system:
                     y, x = zip(*staff)
                     ax[0].plot(x, y, color=color)
-                    #ax[0].plot(x, y, "bo")
+                    ax[0].plot(x, y, "bo")
 
             ax[1].imshow(image_data.image, cmap='gray')
             for system, color in zip(staff_list, colors):
@@ -192,8 +193,8 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
-    setting_predictor = LineDetectionSettings(smooth_lines_advdebug=False, post_process=True, smooth_lines=2,
-                                              line_fit_distance=0.5, debug=True, model=model_line)
+    setting_predictor = LineDetectionSettings(smooth_lines_advdebug=False, post_process=False, smooth_lines=0,
+                                              line_fit_distance=1, debug=True, model=model_line)
     line_detector = LineDetection(setting_predictor)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')

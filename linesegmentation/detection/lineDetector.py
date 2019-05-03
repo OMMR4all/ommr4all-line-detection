@@ -9,13 +9,13 @@ from pagesegmentation.lib.predictor import PredictSettings
 from scipy.interpolate import interpolate
 from linesegmentation.pixelclassifier.predictor import PCPredictor
 #from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
-from linesegmentation.detection.lineDetectionUtil import vertical_runs
+from linesegmentation.detection.lineDetectionUtil import vertical_runs, best_line_fit
 from linesegmentation.datatypes.datatypes import ImageData
 from linesegmentation.util.image_util import smooth_array
 from collections import defaultdict
 from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
-
+#from linesegmentation.detection.lineDetectionUtil import best_Line_fit
 
 class LineDetectionSettings(NamedTuple):
     numLine: int = 4
@@ -407,6 +407,16 @@ class LineDetector():
                     ax[1].plot(x, y, color=color)
             plt.show()
         return new_stafflines
+
+    def best_fit_systems(self, system_list, image, lt):
+        staff_list = []
+        for system in system_list:
+            new_system = []
+            for line in system:
+                new_line = best_line_fit(image, line, lt)
+                new_system.append(new_line)
+            staff_list.append(new_system)
+        return staff_list
 
 
 def remove_hill(y, smooth=25):
