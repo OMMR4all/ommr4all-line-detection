@@ -8,14 +8,13 @@ import math
 from pagesegmentation.lib.predictor import PredictSettings
 from scipy.interpolate import interpolate
 from linesegmentation.pixelclassifier.predictor import PCPredictor
-#from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.detection.lineDetectionUtil import vertical_runs, best_line_fit
 from linesegmentation.datatypes.datatypes import ImageData
 from linesegmentation.util.image_util import smooth_array
 from collections import defaultdict
 from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
-#from linesegmentation.detection.lineDetectionUtil import best_Line_fit
+
 
 class LineDetectionSettings(NamedTuple):
     numLine: int = 4
@@ -34,6 +33,7 @@ class LineDetectionSettings(NamedTuple):
     line_fit_distance: float = 0.5
     model: Optional[str] = None
     model_foreground_threshold = 0.5
+    best_fit_postprocess = True
     debug_model = False
     processes: int = 12
 
