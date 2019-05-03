@@ -108,7 +108,6 @@ class LineDetection(LineDetector):
 
             if data[i].staff_space_height is None or data[i].staff_line_height is None:
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(data[i].binary_image)
-
             data[i].horizontal_runs_img = calculate_horizontal_runs(1 - pred, self.settings.minLength)
 
             if self.settings.debug_model:
@@ -157,7 +156,7 @@ class LineDetection(LineDetector):
 
         if self.settings.smooth_lines != 0:
             if self.settings.smooth_lines == 1:
-                staff_list = self.smooth_lines(staff_list, self.settings.smooth_value_lowpass)
+                staff_list = self.smooth_lines(staff_list)
             if self.settings.smooth_lines == 2:
                 staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
 

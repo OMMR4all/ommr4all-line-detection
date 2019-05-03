@@ -360,20 +360,20 @@ class LineDetector():
             plt.show()
         return post_processed_staff_systems
 
-    def smooth_lines(self, stafflines, smooth_value=5):
+    def smooth_lines(self, stafflines):
         new_stafflines = []
         for system in stafflines:
             new_system = []
             for line in system:
                 y, x = zip(*line)
-                y = smooth_array(list(y), smooth_value)
+                y = smooth_array(list(y), self.settings.smooth_value_lowpass)
                 line = list(zip(y, x))
                 new_system.append(line)
             new_stafflines.append(new_system)
 
         return new_stafflines
 
-    def smooth_lines_advanced(self, stafflines, smooth_value=25):
+    def smooth_lines_advanced(self, stafflines):
         new_stafflines = []
         for system in stafflines:
             new_system = []
@@ -388,7 +388,7 @@ class LineDetector():
                 append_start = [y[0] for x in range(10)]
                 append_end = [y[-1] for x in range(10)]
                 m_y = append_start + y + append_end
-                remove_hill(m_y, smooth_value)
+                remove_hill(m_y, self.settings.smooth_value_adv)
                 line = list(zip(m_y[10:-10], x))
                 new_system.append(line)
             new_stafflines.append(new_system)
@@ -508,7 +508,6 @@ def ramerdouglas(line, dist):
     pos = distSq.index(maxdist)
     return (ramerdouglas(line[:pos + 2], dist) +
             ramerdouglas(line[pos + 1:], dist)[1:])
-
 
 
 if __name__ == "__main__":
