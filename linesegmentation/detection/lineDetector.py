@@ -8,7 +8,7 @@ import math
 from pagesegmentation.lib.predictor import PredictSettings
 from scipy.interpolate import interpolate
 from linesegmentation.pixelclassifier.predictor import PCPredictor
-from linesegmentation.detection.lineDetectionUtil import vertical_runs, best_line_fit
+from linesegmentation.detection.lineDetectionUtil import vertical_runs, best_line_fit, get_blackness_of_line
 from linesegmentation.datatypes.datatypes import ImageData
 from linesegmentation.util.image_util import smooth_array
 from collections import defaultdict
@@ -38,7 +38,8 @@ class LineDetectionSettings(NamedTuple):
     processes: int = 12
 
 
-def get_blackness_of_line(line, image):
+def approximate_blackness_of_line(line, image):
+    image = image
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = x_list[0], x_list[-1]
@@ -203,7 +204,7 @@ class LineDetector():
                 if len(staff) > self.settings.numLine:
                     intensity_of_staff = {}
                     for line_ind, line in enumerate(staff):
-                        intensity_of_staff[line_ind] = get_blackness_of_line(line , img)
+                        intensity_of_staff[line_ind] = approximate_blackness_of_line(line, img)
                     if intensity_of_staff:
                         prune = True
                         min_blackness = min(intensity_of_staff.items(), key=lambda t: t[1])
@@ -290,7 +291,6 @@ class LineDetector():
                 else:
                     break
         return staff_list
-
 
     def postprocess_staff_systems(self, staffs_lines, line_height, image):
         post_processed_staff_systems = []
@@ -486,6 +486,18 @@ def _vec2d_sub(p1, p2):
 
 def _vec2d_mult(p1, p2):
     return p1[0]*p2[0] + p1[1]*p2[1]
+
+
+def check_systems(line_list, binary_image, threshold=0.7):
+    new_line_list = []
+    for system in line_list:
+        line_blackness = []
+        for line in system:
+            line_blackness.append(get_blackness_of_line(line, binary_image))
+        #print(np.mean(line_blackness))
+        if np.mean(line_blackness) < threshold:
+            new_line_list.append(system)
+    return new_line_list
 
 
 def ramerdouglas(line, dist):
