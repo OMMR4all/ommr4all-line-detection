@@ -73,17 +73,19 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30):
                 test_line = best_line.copy()
                 test_line[point_ind] = [y + i, x]
                 blackness = get_blackness_of_line(test_line, img)
+
                 if blackness < current_blackness:
                     change = True
                     current_blackness = blackness
                     best_line[point_ind] = [y + i, x]
-                test_line[point_ind] = [y - i, x]
 
+                test_line[point_ind] = [y - i, x]
                 blackness = get_blackness_of_line(test_line, img)
+
                 if blackness < current_blackness:
                     change = True
                     current_blackness = blackness
-                    best_line[point_ind] = [y -i, x]
+                    best_line[point_ind] = [y - i, x]
 
         iterations += 1
     return best_line
@@ -95,10 +97,32 @@ def get_blackness_of_line(line, image):
     x_start, x_end = x_list[0], x_list[-1]
     x_list_new =  [i for i in range(x_start, x_end)]
     y_new = func(x_list_new)
-    y_new_int = [int(y) for y in y_new]
+    y_new_int = [int(np.floor(y + 0.5)) for y in y_new]
     indexes = (np.array(y_new_int), np.array(x_list_new))
     blackness = np.mean(image[indexes])
     return blackness
+
+
+# Used for testing
+def get_blackness_of_line_distribution(line, image, radius=3):
+    y_list, x_list = zip(*line)
+    func = interpolate.interp1d(x_list, y_list)
+    x_start, x_end = x_list[0], x_list[-1]
+    x_list_new = np.asarray([i for i in range(x_start, x_end)])
+    y_new = func(x_list_new)
+    y_new_int = np.asarray([int(y) for y in y_new])
+    avg_blackness = 0
+    for x in range(1, radius):
+        y_step = y_new_int + x - 1
+        indexes = (y_step, np.array(x_list_new))
+        blackness = np.mean(image[indexes]) * 1.0 / x
+        avg_blackness = avg_blackness + blackness
+    for x in range(1, radius):
+        y_step = y_new_int - x + 1
+        indexes = (y_step, np.array(x_list_new))
+        blackness = np.mean(image[indexes]) * 1.0 / x
+        avg_blackness = avg_blackness + blackness
+    return avg_blackness
 
 
 def calculate_horizontal_runs(img: np.array, min_length: int):
