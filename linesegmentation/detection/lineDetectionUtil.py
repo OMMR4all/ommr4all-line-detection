@@ -58,30 +58,34 @@ def vertical_runs(img: np.array):
     return white_r, black_r
 
 
-def best_line_fit(img:np.array, line, line_thickness=3, iterations=2):
+def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30):
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.copy()
-    while iterations != 0:
+    change = True
+    iterations = 0
+    while change:
+        if iterations > max_iterations:
+            break
+        change = False
         for point_ind, point in enumerate(best_line):
             y, x = point[0], point[1]
             for i in range(1, line_thickness + 1):
                 test_line = best_line.copy()
                 test_line[point_ind] = [y + i, x]
                 blackness = get_blackness_of_line(test_line, img)
-
                 if blackness < current_blackness:
-
+                    change = True
                     current_blackness = blackness
                     best_line[point_ind] = [y + i, x]
                 test_line[point_ind] = [y - i, x]
 
                 blackness = get_blackness_of_line(test_line, img)
                 if blackness < current_blackness:
+                    change = True
                     current_blackness = blackness
                     best_line[point_ind] = [y -i, x]
 
-        iterations -= 1
-
+        iterations += 1
     return best_line
 
 

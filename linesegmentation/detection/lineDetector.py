@@ -291,7 +291,6 @@ class LineDetector():
                     break
         return staff_list
 
-
     def postprocess_staff_systems(self, staffs_lines, line_height, image):
         post_processed_staff_systems = []
         h = image.shape[0]
@@ -486,6 +485,17 @@ def _vec2d_sub(p1, p2):
 
 def _vec2d_mult(p1, p2):
     return p1[0]*p2[0] + p1[1]*p2[1]
+
+
+def check_systems(line_list, binary_image, threshold=0.2):
+    new_line_list = []
+    for system in line_list:
+        line_blackness = []
+        for line in system:
+            line_blackness.append(get_blackness_of_line(line, binary_image))
+        if np.mean(line_blackness) > threshold:
+            new_line_list.append(system)
+    return line_list
 
 
 def ramerdouglas(line, dist):

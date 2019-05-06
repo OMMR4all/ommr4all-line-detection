@@ -3,7 +3,7 @@ import multiprocessing
 import tqdm
 from functools import partial
 from typing import List, Generator
-from linesegmentation.detection.lineDetectionUtil import vertical_runs, calculate_horizontal_runs
+from linesegmentation.detection.lineDetectionUtil import vertical_runs, calculate_horizontal_runs, get_blackness_of_line
 import numpy as np
 # image specific imports
 from PIL import Image
@@ -11,11 +11,10 @@ from matplotlib import pyplot as plt
 # project specific imports
 from scipy.ndimage.morphology import binary_erosion, binary_dilation
 from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data, \
-    line_fitting
+    line_fitting, check_systems
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, normalize_connected_components
-
 
 class LineDetection(LineDetector):
     """Line detection class
@@ -148,6 +147,7 @@ class LineDetection(LineDetector):
 
         else:
             staff_list = [[x] for x in line_list]
+        stafflist2 = line_fitting(staff_list, 1)
 
         if self.settings.post_process:
             staff_list = self.postprocess_staff_systems(staff_list, staff_line_height, binary_image)
@@ -167,16 +167,19 @@ class LineDetection(LineDetector):
             staff_list = line_fitting(staff_list, 1)
             staff_list = self.best_fit_systems(staff_list, image_data.image, staff_line_height)
 
+        staff_list = check_systems(staff_list, binary_image)
+
         # Debug
         if self.settings.debug:
             f, ax = plt.subplots(1, 2, True, True)
             ax[0].imshow(binary_image, cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
-            for system, color in zip(staff_list, colors):
+            for system, color in zip(stafflist2, colors):
                 for staff in system:
                     y, x = zip(*staff)
                     ax[0].plot(x, y, color=color)
+                    ax[0].plot(x, y, "bo")
 
             ax[1].imshow(image_data.image, cmap='gray')
             for system, color in zip(staff_list, colors):
