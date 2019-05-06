@@ -489,6 +489,7 @@ def _vec2d_mult(p1, p2):
 
 
 def check_systems(line_list, binary_image, threshold=0.7):
+
     new_line_list = []
     for system in line_list:
         line_blackness = []

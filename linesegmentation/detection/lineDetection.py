@@ -175,6 +175,7 @@ class LineDetection(LineDetector):
             ax[0].imshow(binary_image, cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(stafflist2)))
+
             for system, color in zip(stafflist2, colors):
                 for staff in system:
                     y, x = zip(*staff)
