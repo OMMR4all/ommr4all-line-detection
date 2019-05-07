@@ -70,6 +70,7 @@ def angle_difference_of_points(x1, y1, x2, y2):
 
 def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to_keep_points=0.2):
     new_line = []
+
     def distance(p1, p2):
         return p2[1] - p1[1]
     prev_point = None
@@ -91,10 +92,7 @@ def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to
 
 
 def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_startend_points=True):
-    first_x_point = line[0][1]
-    last_x_point = line[-1][1]
-    line = simplify_anchor_points(line, max_distance= (last_x_point - first_x_point) / 15,
-                                  min_distance=(last_x_point - first_x_point) / 30)
+
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.copy()
     change = True
@@ -108,7 +106,7 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_
                 if point_ind == 0 or point_ind == len(best_line):
                     continue
             y, x = point[0], point[1]
-            for i in range(1, line_thickness + 1):
+            for i in range(1, 2):
                 test_line = best_line.copy()
                 test_line[point_ind] = [y + i, x]
                 blackness = get_blackness_of_line(test_line, img)
@@ -133,7 +131,7 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_
 def get_blackness_of_line(line, image):
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
-    x_start, x_end = x_list[0], x_list[-1]
+    x_start, x_end = int(x_list[0]), int(x_list[-1])
     x_list_new =  [i for i in range(x_start, x_end)]
     y_new = func(x_list_new)
     y_new_int = [int(np.floor(y + 0.5)) for y in y_new]
@@ -180,3 +178,7 @@ def calculate_horizontal_runs(img: np.array, min_length: int):
             for x in range(xo, xo + rl):
                 np_matrix[y, x] = 255
     return np_matrix
+
+
+def scale_line(line, factor):
+    return [[point[0] * factor, point[1] * factor] for point in line]

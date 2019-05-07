@@ -2,6 +2,8 @@ import cv2
 import operator
 from collections import defaultdict
 import numpy as np
+from PIL import Image
+import PIL
 
 
 def extract_connected_components(image):
@@ -35,6 +37,14 @@ def normalize_connected_components(cc_list):
     return normalize(cc_list)
 
 
+def resize_image(image, scale, resample=cv2.INTER_CUBIC):
+    orig_height = image.shape[0]
+    orig_width = image.shape[1]
+    new_width = int(scale * orig_width)
+    new_height = int(scale * orig_height)
+    return cv2.resize(image, dsize=(new_width, new_height ), interpolation=resample) / 255
+
+
 def convert_2dpoint_to_1did(list, width):
     point_to_id = list[1] * width + list[0]
     return point_to_id
@@ -45,5 +55,14 @@ def convert_2darray_to_1darray(array, width):
 
 
 if __name__ == "__main__":
-    l = np.array([[1,2],[2,4], [2,1]])
-    print(convert_2darray_to_1darray(l))
+    import os
+    from matplotlib import pyplot as plt
+    #l = np.array([[1, 2], [2, 4], [2, 1]])
+    #print(convert_2darray_to_1darray(l))
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
+    img = np.array(Image.open(page_path))
+    plt.imshow(resize_image(img,4))
+    plt.show()
+
+

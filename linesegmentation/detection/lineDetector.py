@@ -7,13 +7,13 @@ import math
 from pagesegmentation.lib.predictor import PredictSettings
 from scipy.interpolate import interpolate
 from linesegmentation.pixelclassifier.predictor import PCPredictor
-from linesegmentation.detection.lineDetectionUtil import vertical_runs, best_line_fit, get_blackness_of_line
+from linesegmentation.detection.lineDetectionUtil import vertical_runs, best_line_fit, get_blackness_of_line, scale_line, simplify_anchor_points
 from linesegmentation.datatypes.datatypes import ImageData
 from linesegmentation.util.image_util import smooth_array
 from collections import defaultdict
 from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
-
+from linesegmentation.preprocessing.preprocessingUtil import resize_image
 
 class LineDetectionSettings(NamedTuple):
     numLine: int = 4
@@ -408,12 +408,35 @@ class LineDetector():
             plt.show()
         return new_staff_lines
 
-    def best_fit_systems(self, system_list, image, lt):
+    def best_fit_systems(self, system_list, image, lt, scale=2.0):
+        from datetime import datetime
+        print('step1')
+        print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+
+        scaled_image = resize_image(image * 255, scale)
+        print('step2')
+        print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+
         staff_list = []
         for system in system_list:
             new_system = []
             for line in system:
-                new_line = best_line_fit(image, line, lt)
+                first_x_point = line[0][1]
+                last_x_point = line[-1][1]
+                print('step3')
+                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+
+                line = simplify_anchor_points(line, max_distance=(last_x_point - first_x_point) / 15,
+                                              min_distance=(last_x_point - first_x_point) / 30)
+                print('step4')
+                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+
+                scaled_line = scale_line(line, scale)
+                print('step5')
+                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+
+                new_line = best_line_fit(scaled_image, scaled_line, lt)
+                new_line = scale_line(new_line, 1.0 / scale)
                 new_system.append(new_line)
             staff_list.append(new_system)
         return staff_list
