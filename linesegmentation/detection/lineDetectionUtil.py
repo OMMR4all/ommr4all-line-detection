@@ -3,6 +3,7 @@ from scipy.signal import medfilt2d
 import numpy as np
 from itertools import tee
 from scipy.interpolate import interpolate
+from numpy.linalg import norm
 
 
 def get_text_borders(image, preprocess=False, min_dist=30, thres=0.3):
@@ -58,7 +59,42 @@ def vertical_runs(img: np.array):
     return white_r, black_r
 
 
-def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30):
+def angle_difference_of_points(x1, y1, x2, y2):
+    v1 = np.array([x1, y1])
+    v2 = np.array([x2, y2])
+
+    angle_difference = np.arccos((v1 @ v2) / (norm(v1) * norm(v2)))
+
+    return angle_difference
+
+
+def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to_keep_points=0.2):
+    new_line = []
+    def distance(p1, p2):
+        return p2[1] - p1[1]
+    prev_point = None
+    for point_ind, point in enumerate(line):
+        if prev_point is not None:
+            point_distance = distance(prev_point, point)
+        else:
+            point_distance = min_distance + 1
+        if point_distance > max_distance:
+            new_line.append([point[0], prev_point[1] + (point[1] - prev_point[1])/2])
+        if point_distance < min_distance:
+            if angle_difference_of_points(prev_point[1], prev_point[0], point[1], point[0]) > min_degree_to_keep_points \
+                    or point_ind == len(line):
+                new_line.append(point)
+        else:
+            new_line.append(point)
+        prev_point = point
+    return new_line
+
+
+def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_startend_points=True):
+    first_x_point = line[0][1]
+    last_x_point = line[-1][1]
+    line = simplify_anchor_points(line, max_distance= (last_x_point - first_x_point) / 15,
+                                  min_distance=(last_x_point - first_x_point) / 30)
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.copy()
     change = True
@@ -68,6 +104,9 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30):
             break
         change = False
         for point_ind, point in enumerate(best_line):
+            if skip_startend_points:
+                if point_ind == 0 or point_ind == len(best_line):
+                    continue
             y, x = point[0], point[1]
             for i in range(1, line_thickness + 1):
                 test_line = best_line.copy()
@@ -110,7 +149,7 @@ def get_blackness_of_line_distribution(line, image, radius=3):
     x_start, x_end = x_list[0], x_list[-1]
     x_list_new = np.asarray([i for i in range(x_start, x_end)])
     y_new = func(x_list_new)
-    y_new_int = np.asarray([int(y) for y in y_new])
+    y_new_int = np.asarray([int(np.floor(y + 0.5)) for y in y_new])
     avg_blackness = 0
     for x in range(1, radius):
         y_step = y_new_int + x - 1

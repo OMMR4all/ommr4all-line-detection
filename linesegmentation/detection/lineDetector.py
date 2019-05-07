@@ -204,6 +204,7 @@ class LineDetector():
                 if len(staff) > self.settings.numLine:
                     intensity_of_staff = {}
                     for line_ind, line in enumerate(staff):
+
                         intensity_of_staff[line_ind] = approximate_blackness_of_line(line, img)
                     if intensity_of_staff:
                         prune = True
@@ -481,7 +482,7 @@ def _vec2d_dist(p1, p2):
 
 
 def _vec2d_sub(p1, p2):
-    return (p1[0]-p2[0], p1[1]-p2[1])
+    return p1[0]-p2[0], p1[1]-p2[1]
 
 
 def _vec2d_mult(p1, p2):
