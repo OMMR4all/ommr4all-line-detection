@@ -16,6 +16,7 @@ from linesegmentation.preprocessing.binarization.ocropus_binarizer import binari
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, normalize_connected_components
 
+
 class LineDetection(LineDetector):
     """Line detection class
 
@@ -94,7 +95,7 @@ class LineDetection(LineDetector):
             morph = binary_dilation(morph, structure=np.full((5, 1), 1))
             staffs = (binarized ^ morph)
             image_data.staff_space_height, image_data.staff_line_height = vertical_runs(binary)
-
+            image_data.binary_image = binary
             image_data.horizontal_runs_img = calculate_horizontal_runs((1 - staffs), self.settings.minLength)
             yield self.detect_staff_lines(image_data)
 
@@ -163,7 +164,7 @@ class LineDetection(LineDetector):
                 if self.settings.line_fit_distance > 0:
                     staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
 
-        elif True:
+        elif self.settings.best_fit_postprocess:
             staff_list = line_fitting(staff_list, 1)
             staff_list = self.best_fit_systems(staff_list, image_data.image, staff_line_height)
 
@@ -201,6 +202,5 @@ if __name__ == "__main__":
     line_detector = LineDetection(setting_predictor)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-
     for _pred in line_detector.detect_paths([page_path]):
         pass
