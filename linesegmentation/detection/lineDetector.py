@@ -1,6 +1,5 @@
 # misc imports
 import os
-from dataclasses import dataclass
 from typing import List, Optional, NamedTuple
 import numpy as np
 import math
@@ -361,22 +360,22 @@ class LineDetector():
             plt.show()
         return post_processed_staff_systems
 
-    def smooth_lines(self, stafflines):
-        new_stafflines = []
-        for system in stafflines:
+    def smooth_lines(self, staff_lines):
+        new_staff_lines = []
+        for system in staff_lines:
             new_system = []
             for line in system:
                 y, x = zip(*line)
                 y = smooth_array(list(y), self.settings.smooth_value_lowpass)
                 line = list(zip(y, x))
                 new_system.append(line)
-            new_stafflines.append(new_system)
+            new_staff_lines.append(new_system)
 
-        return new_stafflines
+        return new_staff_lines
 
-    def smooth_lines_advanced(self, stafflines):
-        new_stafflines = []
-        for system in stafflines:
+    def smooth_lines_advanced(self, staff_lines):
+        new_staff_lines = []
+        for system in staff_lines:
             new_system = []
             for line in system:
                 y, x = zip(*line)
@@ -392,22 +391,22 @@ class LineDetector():
                 remove_hill(m_y, self.settings.smooth_value_adv)
                 line = list(zip(m_y[10:-10], x))
                 new_system.append(line)
-            new_stafflines.append(new_system)
+            new_staff_lines.append(new_system)
 
         if self.settings.smooth_lines_advdebug:
             f, ax = plt.subplots(1, 2, True, True)
             cmap = plt.get_cmap('jet')
-            colors = cmap(np.linspace(0, 1.0, len(new_stafflines)))
-            for system, color in zip(stafflines, colors):
+            colors = cmap(np.linspace(0, 1.0, len(new_staff_lines)))
+            for system, color in zip(staff_lines, colors):
                 for staff in system:
                     y, x = zip(*staff)
                     ax[0].plot(x, y, color=color)
-            for system, color in zip(new_stafflines, colors):
+            for system, color in zip(new_staff_lines, colors):
                 for staff in system:
                     y, x = zip(*staff)
                     ax[1].plot(x, y, color=color)
             plt.show()
-        return new_stafflines
+        return new_staff_lines
 
     def best_fit_systems(self, system_list, image, lt):
         staff_list = []
@@ -535,7 +534,7 @@ def ramerdouglas(line, dist):
 
 
 if __name__ == "__main__":
-    y = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9]
-    x = [i for i in range(len(y))]
-    print(y)
-    print(x)
+    y_test = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9]
+    x_test = [i for i in range(len(y_test))]
+    print(y_test)
+    print(x_test)
