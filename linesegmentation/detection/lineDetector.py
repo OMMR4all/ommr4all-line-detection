@@ -16,6 +16,7 @@ from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
 from linesegmentation.preprocessing.preprocessingUtil import resize_image
 
+
 class LineDetectionSettings(NamedTuple):
     numLine: int = 4
     minLineNum: int = 3
@@ -558,7 +559,7 @@ def ramerdouglas(line, dist):
 
 
 if __name__ == "__main__":
-    y = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9]
-    x = [i for i in range(len(y))]
-    print(y)
-    print(x)
+    y_test = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9]
+    x_test = [i for i in range(len(y_test))]
+    print(y_test)
+    print(x_test)
