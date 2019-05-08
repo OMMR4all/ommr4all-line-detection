@@ -43,9 +43,9 @@ class LineDetection(LineDetector):
         def read_img(path):
             return np.array(Image.open(path))
 
-        return self.detect(list(map(read_img, image_paths)), image_paths)
+        return self.detect(list(map(read_img, image_paths)))
 
-    def detect(self, images: List[np.ndarray], image_paths) -> Generator[List[List[List[int]]], None, None]:
+    def detect(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
         """
         Function  to detect die stafflines in an image
 
@@ -77,9 +77,9 @@ class LineDetection(LineDetector):
                      ]    
         """
         if not self.settings.model:
-            return self.detect_basic(images)
+            return self.detect_morphological(images)
         else:
-            return self.detect_advanced(images)
+            return self.detect_FCN(images)
 
     def detect_basic(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
 
@@ -99,7 +99,7 @@ class LineDetection(LineDetector):
             image_data.horizontal_runs_img = calculate_horizontal_runs((1 - staffs), self.settings.minLength)
             yield self.detect_staff_lines(image_data)
 
-    def detect_advanced(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
+    def detect_FCN(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
         create_data_partital = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partital, images), total=len(images))]
