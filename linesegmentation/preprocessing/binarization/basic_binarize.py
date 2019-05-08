@@ -1,14 +1,14 @@
-from skimage.morphology import disk, square
-from skimage.filters import threshold_otsu, threshold_adaptive
-from skimage.filters.rank import otsu, threshold
+#from skimage.morphology import disk, square
+#from skimage.filters import threshold_otsu, threshold_adaptive
+#from skimage.filters.rank import otsu, threshold
 import cv2 as cv
 from datetime import datetime
 
 
-def binarize_global(image):
-    global_thresh = threshold_otsu(image)
-    binary_global = image > global_thresh
-    return binary_global
+#def binarize_global(image):
+#    global_thresh = threshold_otsu(image)
+#    binary_global = image > global_thresh
+#    return binary_global
 
 
 # deprecated
@@ -17,14 +17,14 @@ def binarize_global(image):
 #    return binary_adaptive
 
 
-def adaptive_otsu(image, radius = 55):
-    selem = disk(radius)
-    #print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-    local_otsu = otsu(image, selem)
-    #print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-    binary = image >= local_otsu
-    #print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-    return binary
+#def adaptive_otsu(image, radius = 55):
+#    selem = disk(radius)
+#    #print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+#    local_otsu = otsu(image, selem)
+#    #print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+#    binary = image >= local_otsu
+#    #print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+#    return binary
 
 
 def gauss_threshold(image, block_size=35, offset = 40):

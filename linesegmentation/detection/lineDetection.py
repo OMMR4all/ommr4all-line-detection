@@ -105,7 +105,6 @@ class LineDetection(LineDetector):
             data = [v for v in tqdm.tqdm(p.imap(create_data_partital, images), total=len(images))]
         for i, prob in enumerate(self.predictor.predict(data)):
             pred = (prob > self.settings.model_foreground_threshold)
-
             if data[i].staff_space_height is None or data[i].staff_line_height is None:
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(data[i].binary_image)
             data[i].horizontal_runs_img = calculate_horizontal_runs(1 - pred, self.settings.minLength)
@@ -169,7 +168,6 @@ class LineDetection(LineDetector):
             staff_list = self.best_fit_systems(staff_list, image_data.image, staff_line_height)
 
         staff_list = check_systems(staff_list, binary_image)
-
         # Debug
         if self.settings.debug:
             f, ax = plt.subplots(1, 2, True, True)
@@ -197,8 +195,7 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
-    setting_predictor = LineDetectionSettings( debug=True,
-                                              model=model_line)
+    setting_predictor = LineDetectionSettings(debug=True, model=model_line)
     line_detector = LineDetection(setting_predictor)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
