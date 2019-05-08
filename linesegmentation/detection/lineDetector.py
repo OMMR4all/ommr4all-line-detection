@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
 from linesegmentation.preprocessing.preprocessingUtil import resize_image
 
+
 class LineDetectionSettings(NamedTuple):
     numLine: int = 4
     minLineNum: int = 3

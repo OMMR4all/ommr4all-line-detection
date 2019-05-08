@@ -92,7 +92,7 @@ def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to
 
 
 def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_startend_points=True):
-
+    from datetime import datetime
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.copy()
     change = True
@@ -109,7 +109,9 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_
             for i in range(1, 2):
                 test_line = best_line.copy()
                 test_line[point_ind] = [y + i, x]
+                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
                 blackness = get_blackness_of_line(test_line, img)
+                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
 
                 if blackness < current_blackness:
                     change = True
@@ -125,6 +127,7 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_
                     best_line[point_ind] = [y - i, x]
 
         iterations += 1
+    print(iterations)
     return best_line
 
 
@@ -132,9 +135,9 @@ def get_blackness_of_line(line, image):
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = int(x_list[0]), int(x_list[-1])
-    x_list_new =  [i for i in range(x_start, x_end)]
+    x_list_new = np.asarray(list(range(x_start, x_end)))
     y_new = func(x_list_new)
-    y_new_int = [int(np.floor(y + 0.5)) for y in y_new]
+    y_new_int = np.floor((y_new + 0.5)).astype(int)
     indexes = (np.array(y_new_int), np.array(x_list_new))
     blackness = np.mean(image[indexes])
     return blackness
@@ -145,9 +148,9 @@ def get_blackness_of_line_distribution(line, image, radius=3):
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = x_list[0], x_list[-1]
-    x_list_new = np.asarray([i for i in range(x_start, x_end)])
+    x_list_new = np.asarray(list(range(x_start, x_end)))
     y_new = func(x_list_new)
-    y_new_int = np.asarray([int(np.floor(y + 0.5)) for y in y_new])
+    y_new_int = np.floor((y_new + 0.5)).astype(int)
     avg_blackness = 0
     for x in range(1, radius):
         y_step = y_new_int + x - 1
