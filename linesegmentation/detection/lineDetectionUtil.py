@@ -92,7 +92,6 @@ def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to
 
 
 def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_startend_points=True):
-    from datetime import datetime
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.copy()
     change = True
@@ -109,9 +108,7 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_
             for i in range(1, 2):
                 test_line = best_line.copy()
                 test_line[point_ind] = [y + i, x]
-                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
                 blackness = get_blackness_of_line(test_line, img)
-                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
 
                 if blackness < current_blackness:
                     change = True
@@ -127,7 +124,6 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_
                     best_line[point_ind] = [y - i, x]
 
         iterations += 1
-    print(iterations)
     return best_line
 
 

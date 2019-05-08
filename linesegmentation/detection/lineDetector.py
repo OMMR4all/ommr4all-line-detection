@@ -34,6 +34,8 @@ class LineDetectionSettings(NamedTuple):
     model: Optional[str] = None
     model_foreground_threshold = 0.5
     best_fit_postprocess = True
+    best_fit_scale = 2.0
+
     debug_model = False
     processes: int = 12
 
@@ -410,13 +412,11 @@ class LineDetector():
         return new_staff_lines
 
     def best_fit_systems(self, system_list, image, lt, scale=2.0):
-        from datetime import datetime
-        print('step1')
-        print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+        image_cp = image.copy()
 
-        scaled_image = resize_image(image * 255, scale)
-        print('step2')
-        print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+        # punish white pixels more
+        image_cp[image_cp > 0.8] *= 2
+        scaled_image = resize_image(image_cp * 255, scale)
 
         staff_list = []
         for system in system_list:
@@ -424,18 +424,9 @@ class LineDetector():
             for line in system:
                 first_x_point = line[0][1]
                 last_x_point = line[-1][1]
-                print('step3')
-                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-
                 line = simplify_anchor_points(line, max_distance=(last_x_point - first_x_point) / 15,
                                               min_distance=(last_x_point - first_x_point) / 30)
-                print('step4')
-                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-
                 scaled_line = scale_line(line, scale)
-                print('step5')
-                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-
                 new_line = best_line_fit(scaled_image, scaled_line, lt)
                 new_line = scale_line(new_line, 1.0 / scale)
                 new_system.append(new_line)
