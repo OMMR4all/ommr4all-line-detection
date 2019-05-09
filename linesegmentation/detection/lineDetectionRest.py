@@ -5,12 +5,14 @@ from PIL import Image
 import numpy as np
 from functools import partial
 from matplotlib import pyplot as plt
-from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, create_data, ImageData, line_fitting
+from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, create_data, ImageData, \
+    line_fitting
 from linesegmentation.detection.lineDetectionUtil import get_text_borders, vertical_runs, calculate_horizontal_runs
 from pagesegmentation.lib.predictor import PredictSettings
 from linesegmentation.pixelclassifier.predictor import PCPredictor
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
-from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, normalize_connected_components
+from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, \
+    normalize_connected_components
 from typing import List, Generator
 
 
@@ -46,7 +48,7 @@ class LineDetectionRest(LineDetector):
                 region_prediction[region_prediction < 255] = 0
                 line_prediction_pruned = line_prediction * region_prediction * 255
                 if self.settings.debug:
-                    x, y = plt.subplots(1, 3, True, True)
+                    x, y = plt.subplots(1, 3, sharex=True, sharey=True)
                     y[0].imshow(region_prediction)
                     y[1].imshow(line_prediction)
                     y[2].imshow(line_prediction_pruned)
@@ -106,7 +108,7 @@ class LineDetectionRest(LineDetector):
         line_list = [l for l in line_list if l[-1][1] - l[0][1] > 50]
 
         # Debug
-        staff2 = line_list.copy()
+        # staff2 = line_list.copy()
 
         line_list = self.prune_small_lines(line_list, staff_space_height)
 
@@ -129,7 +131,7 @@ class LineDetectionRest(LineDetector):
 
         # Debug
         if self.settings.debug:
-            f, ax = plt.subplots(1, 2, True, True)
+            f, ax = plt.subplots(1, 2, sharex=True, sharey=True)
             ax[0].imshow(image_data.image, cmap='gray')
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
@@ -150,8 +152,8 @@ if __name__ == "__main__":
     model_line = os.path.join(project_dir, 'demo/models/line/virtual_lines/model')
     model_region = os.path.join(project_dir, 'demo/models/region/model')
     settings_prediction = LineDetectionSettings(debug=True, minLineNum=1, numLine=4, lineSpaceHeight=20
-                                                ,targetLineSpaceHeight=10, smooth_lines=2, line_fit_distance=1.0,
-                                     model=model_line)
+                                                , targetLineSpaceHeight=10, smooth_lines=2, line_fit_distance=1.0,
+                                                model=model_line)
     line_detector = LineDetectionRest(settings_prediction, model_region)
 
     for _pred in line_detector.detect_paths([page_path]):

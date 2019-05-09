@@ -197,7 +197,7 @@ class LineDetector():
         return staff_list
 
     def prune_lines_in_system_with_lowest_intensity(self, staff_list, img):
-        ## Remove the lines with the lowest blackness value in each system, so that len(staffs) <= numLine
+        # Remove the lines with the lowest blackness value in each system, so that len(staffs) <= numLine
         prune = True
         while prune:
             prune = False
@@ -411,7 +411,8 @@ class LineDetector():
         return new_staff_lines
 
     def best_fit_systems(self, system_list, gray_image, binary_image, lt, scale=2.0):
-        image_cp = gray_image# + binary_image
+
+        image_cp = gray_image  # + binary_image
         scaled_image = resize_image(image_cp * 255, scale)
 
         staff_list = []
@@ -423,7 +424,7 @@ class LineDetector():
                 line = simplify_anchor_points(line, max_distance=(last_x_point - first_x_point) / 15,
                                               min_distance=(last_x_point - first_x_point) / 30)
                 scaled_line = scale_line(line, scale)
-                new_line = best_line_fit(scaled_image, scaled_line, lt, scale = scale)
+                new_line = best_line_fit(scaled_image, scaled_line, lt, scale=scale)
                 new_line = scale_line(new_line, 1.0 / scale)
                 new_system.append(new_line)
             staff_list.append(new_system)
@@ -452,7 +453,8 @@ def remove_hill(y, smooth=25):
                     for xc in range(start + 1, start + hlen + 1):
                         y[xc] = max(start_y, end_y)
                         correction = True
-                if correction: break
+                if correction:
+                    break
                 # correct up
                 for xc in range(start + 1, start + hlen + 1):
                     yc = y[xc]
@@ -463,8 +465,10 @@ def remove_hill(y, smooth=25):
                         y[xc] = min(start_y, end_y)
                         correction = True
 
-                if correction: break
-            if correction: break
+                if correction:
+                    break
+            if correction:
+                break
 
 
 def interpolate_sequence(x_list, y_list):
@@ -474,17 +478,17 @@ def interpolate_sequence(x_list, y_list):
     return x_list_new, list((np.floor(y_list_new + 0.5).astype(int)))
 
 
-def line_fitting(stafflist, dist=0.5):
-    new_stafflist = []
-    for system in stafflist:
+def line_fitting(staff_list, dist=0.5):
+    new_staff_list = []
+    for system in staff_list:
         new_system = []
         for line in system:
             line = np.flip(np.asarray(line), axis=-1)
             simplified = ramerdouglas(line.tolist(), dist=dist)
             simplified = np.flip(np.asarray(simplified), axis=-1)
             new_system.append(simplified.tolist())
-        new_stafflist.append(new_system)
-    return new_stafflist
+        new_staff_list.append(new_system)
+    return new_staff_list
 
 
 def _vec2d_dist(p1, p2):
@@ -506,7 +510,7 @@ def check_systems(line_list, binary_image, threshold=0.7):
         line_blackness = []
         for line in system:
             line_blackness.append(get_blackness_of_line(line, binary_image))
-        #print(np.mean(line_blackness))
+        # print(np.mean(line_blackness))
         if np.mean(line_blackness) < threshold:
             new_line_list.append(system)
     return new_line_list
@@ -529,17 +533,18 @@ def ramerdouglas(line, dist):
 
     (begin, end) = (line[0], line[-1]) if line[0] != line[-1] else (line[0], line[-2])
 
-    distSq = []
+    dist_sq = []
     for curr in line[1:-1]:
         tmp = (
-            _vec2d_dist(begin, curr) - _vec2d_mult(_vec2d_sub(end, begin), _vec2d_sub(curr, begin)) ** 2 / _vec2d_dist(begin, end))
-        distSq.append(tmp)
+            _vec2d_dist(begin, curr) - _vec2d_mult(_vec2d_sub(end, begin),
+                                                   _vec2d_sub(curr, begin)) ** 2 / _vec2d_dist(begin, end))
+        dist_sq.append(tmp)
 
-    maxdist = max(distSq)
+    maxdist = max(dist_sq)
     if maxdist < dist ** 2:
         return [begin, end]
 
-    pos = distSq.index(maxdist)
+    pos = dist_sq.index(maxdist)
     return (ramerdouglas(line[:pos + 2], dist) +
             ramerdouglas(line[pos + 1:], dist)[1:])
 
