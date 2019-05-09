@@ -153,7 +153,7 @@ class LineDetection(LineDetector):
         stafflist2 = line_fitting(staff_list, 1)
 
         if self.settings.post_process:
-            staff_list = self.postprocess_staff_systems(staff_list, staff_line_height, binary_image)
+            staff_list = self.post_process_staff_systems(staff_list, staff_line_height, binary_image)
             if self.settings.numLine > 1 and self.settings.lineExtension:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
 

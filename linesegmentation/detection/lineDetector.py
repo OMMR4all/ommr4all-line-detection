@@ -87,7 +87,8 @@ class LineDetector():
             )
             self.predictor = PCPredictor(pcsettings, settings.targetLineSpaceHeight)
 
-    def connect_connected_components_to_line(self, cc_list, staff_line_height, staff_space_height):
+    @staticmethod
+    def connect_connected_components_to_line(cc_list, staff_line_height, staff_space_height):
         def connect_cc(cc_list, inplace=True):
             def prune_cc(cc_list, length):
                 pruned_cc_list = []
@@ -139,7 +140,8 @@ class LineDetector():
             return cc_list_copy
         return connect_cc(cc_list)
 
-    def prune_small_lines(self, line_list, staff_space_height):
+    @staticmethod
+    def prune_small_lines(line_list, staff_space_height):
         medium_staff_height = [np.mean([y_c for y_c, x_c in staff]) for staff in line_list]
         line_list_copy = line_list.copy()
         while True:
@@ -225,7 +227,8 @@ class LineDetector():
                         del intensity_of_staff[min_blackness[0]]
         return staff_list
 
-    def normalize_lines_in_system(self, staff_list, staff_space_height, img):
+    @staticmethod
+    def normalize_lines_in_system(staff_list, staff_space_height, img):
 
         for z_ind, z in enumerate(staff_list):
             sxs = [line[0][1] for line in z]
@@ -294,7 +297,7 @@ class LineDetector():
                     break
         return staff_list
 
-    def postprocess_staff_systems(self, staffs_lines, line_height, image):
+    def post_process_staff_systems(self, staffs_lines, line_height, image):
         post_processed_staff_systems = []
         h = image.shape[0]
         l2 = math.ceil(line_height / 2)
@@ -410,8 +413,8 @@ class LineDetector():
             plt.show()
         return new_staff_lines
 
-    def best_fit_systems(self, system_list, gray_image, binary_image, lt, scale=2.0):
-
+    @staticmethod
+    def best_fit_systems(system_list, gray_image, binary_image, lt, scale=2.0):
         image_cp = gray_image  # + binary_image
         scaled_image = resize_image(image_cp * 255, scale)
 
