@@ -79,9 +79,9 @@ class LineDetection(LineDetector):
         if not self.settings.model:
             return self.detect_morphological(images)
         else:
-            return self.detect_FCN(images)
+            return self.detect_fcn(images)
 
-    def detect_basic(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
+    def detect_morphological(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
 
         for img in images:
             image_data = ImageData()
@@ -99,7 +99,7 @@ class LineDetection(LineDetector):
             image_data.horizontal_runs_img = calculate_horizontal_runs((1 - staffs), self.settings.minLength)
             yield self.detect_staff_lines(image_data)
 
-    def detect_FCN(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
+    def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
         create_data_partital = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partital, images), total=len(images))]
