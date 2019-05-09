@@ -3,6 +3,7 @@ import operator
 from collections import defaultdict
 import numpy as np
 from PIL import Image
+from skimage.transform import rescale
 import PIL
 
 
@@ -37,13 +38,8 @@ def normalize_connected_components(cc_list):
     return normalize(cc_list)
 
 
-def resize_image(image, scale, resample=cv2.INTER_CUBIC):
-    orig_height = image.shape[0]
-    orig_width = image.shape[1]
-    new_width = int(scale * orig_width)
-    new_height = int(scale * orig_height)
-    return cv2.resize(image, dsize=(new_width, new_height ), interpolation=resample) / 255
-
+def resize_image(image, scale, order=3):
+    return rescale(image, scale, order=order)
 
 def convert_2dpoint_to_1did(list, width):
     point_to_id = list[1] * width + list[0]

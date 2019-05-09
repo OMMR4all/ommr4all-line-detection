@@ -82,8 +82,8 @@ def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to
         if point_distance > max_distance:
             new_line.append([point[0], prev_point[1] + (point[1] - prev_point[1])/2])
         if point_distance < min_distance:
-            if angle_difference_of_points(prev_point[1], prev_point[0], point[1], point[0]) > min_degree_to_keep_points \
-                    or point_ind == len(line) - 1:
+            if angle_difference_of_points(prev_point[1], prev_point[0], point[1],
+                                          point[0]) > min_degree_to_keep_points or point_ind == len(line) - 1:
                 new_line.append(point)
         else:
             new_line.append(point)
@@ -91,7 +91,7 @@ def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to
     return new_line
 
 
-def best_line_fit(img: np.array, line, line_thickness=3, max_iterations=30, scale=1.0, skip_startend_points=False ):
+def best_line_fit(img: np.array, line, line_thickness=3, max_iterations=30, scale=1.0, skip_startend_points=False):
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.copy()
     change = True
@@ -133,7 +133,7 @@ def get_blackness_of_line(line, image):
     x_start, x_end = int(x_list[0]), int(x_list[-1])
     x_list_new = np.asarray(list(range(x_start, x_end)))
     y_new = func(x_list_new)
-    y_new_int = np.floor((y_new + 0.5)).astype(int)
+    y_new_int = np.floor(y_new + 0.5).astype(int)
     indexes = (np.array(y_new_int), np.array(x_list_new))
     blackness = np.mean(image[indexes])
     return blackness
@@ -181,3 +181,34 @@ def calculate_horizontal_runs(img: np.array, min_length: int):
 
 def scale_line(line, factor):
     return [[point[0] * factor, point[1] * factor] for point in line]
+
+
+if __name__ == "__main__":
+    from PIL import Image
+    from matplotlib import pyplot as plt
+    from linesegmentation.preprocessing.preprocessingUtil import resize_image
+    import os
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    page_path = os.path.join(project_dir, 'demo/images/test/line_test_image.jpg')
+
+    factor = 2.0
+    image = np.array(Image.open(page_path))
+    line = [[130, 50], [133, 90], [134, 108], [136, 110], [131, 128], [138, 131], [139, 147], [142, 151], [142, 191],
+            [140, 238], [149, 241], [149, 336]]
+    image_cp = image.copy()
+    scaled_image = resize_image(image_cp, factor)
+    y, x = zip(*line)
+    yc, ax = plt.subplots(1, 2, True, True)
+    ax[0].imshow(image, cmap="gray")
+    ax[0].plot(x, y,)
+    ax[0].plot(x, y, "bo")
+    scaled_line = scale_line(line, factor)
+    scaled_line = best_line_fit(scaled_image, scaled_line, line_thickness=3, max_iterations=30, scale=factor,
+                                skip_startend_points=False)
+    scale_line = scale_line(scaled_line, 1.0 / factor)
+
+    y, x = zip(*scale_line)
+    ax[1].imshow(image, cmap="gray")
+    ax[1].plot(x, y,)
+    ax[1].plot(x, y, "bo")
+    plt.show()

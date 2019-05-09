@@ -3,7 +3,7 @@ import multiprocessing
 import tqdm
 from functools import partial
 from typing import List, Generator
-from linesegmentation.detection.lineDetectionUtil import vertical_runs, calculate_horizontal_runs, get_blackness_of_line
+from linesegmentation.detection.lineDetectionUtil import vertical_runs, calculate_horizontal_runs
 import numpy as np
 # image specific imports
 from PIL import Image
@@ -14,7 +14,8 @@ from linesegmentation.detection.lineDetector import LineDetector, LineDetectionS
     line_fitting, check_systems
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
-from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, normalize_connected_components
+from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, \
+    normalize_connected_components
 
 
 class LineDetection(LineDetector):
@@ -200,6 +201,7 @@ if __name__ == "__main__":
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
     setting_predictor = LineDetectionSettings(debug=True, model=model_line)
+    print(setting_predictor)
     line_detector = LineDetection(setting_predictor)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
