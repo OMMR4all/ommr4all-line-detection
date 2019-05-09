@@ -27,7 +27,7 @@ from datetime import datetime
 #    return binary
 
 
-def gauss_threshold(image, block_size=35, offset = 40):
+def gauss_threshold(image, block_size=35, offset=40):
     binary = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, \
                                cv.THRESH_BINARY, block_size, offset)
     return binary

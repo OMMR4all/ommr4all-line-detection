@@ -86,9 +86,11 @@ class LineDetection(LineDetector):
         for img in images:
             image_data = ImageData()
             image_data.image = img.astype(float) / 255
-            gray = image_data.image
+            gray = image_data.image.copy()
+
             if np.sum(np.histogram(gray)[0][1:-2]) != 0:
                 gray = enhance(image_data.image)
+
             binary = binarize(gray)
             binarized = 1 - binary
             morph = binary_erosion(binarized, structure=np.full((5, 1), 1))

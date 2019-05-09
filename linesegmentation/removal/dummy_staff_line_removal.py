@@ -46,6 +46,7 @@ def staff_removal(staffs_lines, img, line_height):
                         nimg[it][i] = 1
     return nimg
 
+
 if __name__ == "__main__":
     import os
     from linesegmentation.detection.lineDetector import LineDetectionSettings
@@ -59,11 +60,11 @@ if __name__ == "__main__":
     line_detector = LineDetection(setting_predictor)
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect([page_path]):
+    for _pred in line_detector.detect_paths([page_path]):
         img = np.array(Image.open(page_path)) / 255
         binary_img = binarize(img)
-        space_height, line_height = vertical_runs(binary_img)
-        img_staffs_removed = staff_removal(_pred, binary_img, line_height)
+        space_height_test, line_height_test = vertical_runs(binary_img)
+        img_staffs_removed = staff_removal(_pred, binary_img, line_height_test)
         i, ax = plt.subplots(1, 2, True, True)
         ax[0].imshow(binary_img)
         ax[1].imshow(img_staffs_removed)

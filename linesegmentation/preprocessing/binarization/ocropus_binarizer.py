@@ -18,6 +18,7 @@ def estimate_skew(flat, bignore=0.1, maxskew=2, skewsteps=8):
     flat = np.amax(flat)-flat
     return flat, angle
 
+
 def estimate_skew_angle(image,angles):
     estimates = []
     for a in angles:
@@ -27,18 +28,22 @@ def estimate_skew_angle(image,angles):
     _,a = max(estimates)
     return a
 
+
 def estimate_local_whitelevel(image, zoom=0.5, perc=80, range=20, debug=0):
     '''flatten it by estimating the local whitelevel
     zoom for page background estimation, smaller=faster, default: %(default)s
     percentage for filters, default: %(default)s
     range for filters, default: %(default)s
     '''
-    m = interpolation.zoom(image,zoom)
-    m = filters.percentile_filter(m,perc,size=(range,2))
-    m = filters.percentile_filter(m,perc,size=(2,range))
-    m = interpolation.zoom(m,1.0/zoom)
-    w,h = np.minimum(np.array(image.shape),np.array(m.shape))
-    flat = np.clip(image[:w,:h]-m[:w,:h]+1,0,1)
+    m = interpolation.zoom(image, zoom)
+    m = filters.percentile_filter(m, perc, size=(range, 2))
+    m = filters.percentile_filter(m, perc, size=(2, range))
+    m = interpolation.zoom(m, 1.0/zoom)
+    w, h = np.minimum(np.array(image.shape), np.array(m.shape))
+    w_m, h_m = np.maximum(np.array(image.shape), np.array(m.shape))
+
+    flat = np.clip(image[:w, :h]-m[:w, :h] + 1, 0, 1)
+    flat = np.pad(flat, ((0, w_m - w), (0, h_m - h)), 'edge')
     return flat
 
 
@@ -49,22 +54,22 @@ def estimate_thresholds(flat, bignore=0.1, escale=1.0, lo=5, hi=90, debug=0):
     lo percentile for black estimation, default: %(default)s
     hi percentile for white estimation, default: %(default)s
     '''
-    d0,d1 = flat.shape
-    o0,o1 = int(bignore*d0),int(bignore*d1)
-    est = flat[o0:d0-o0,o1:d1-o1]
-    if escale>0:
+    d0, d1 = flat.shape
+    o0, o1 = int(bignore*d0), int(bignore*d1)
+    est = flat[o0:d0-o0, o1:d1-o1]
+    if escale > 0:
         # by default, we use only regions that contain
         # significant variance; this makes the percentile
         # based low and high estimates more reliable
         e = escale
-        v = est-filters.gaussian_filter(est,e*20.0)
-        v = filters.gaussian_filter(v**2,e*20.0)**0.5
-        v = (v>0.3*np.amax(v))
-        v = morphology.binary_dilation(v,structure=np.ones((int(e*50),1)))
-        v = morphology.binary_dilation(v,structure=np.ones((1,int(e*50))))
+        v = est-filters.gaussian_filter(est, e*20.0)
+        v = filters.gaussian_filter(v**2, e*20.0)**0.5
+        v = (v > 0.3*np.amax(v))
+        v = morphology.binary_dilation(v, structure=np.ones((int(e*50), 1)))
+        v = morphology.binary_dilation(v, structure=np.ones((1, int(e*50))))
         est = est[v]
-    lo = stats.scoreatpercentile(est.ravel(),lo)
-    hi = stats.scoreatpercentile(est.ravel(),hi)
+    lo = stats.scoreatpercentile(est.ravel(), lo)
+    hi = stats.scoreatpercentile(est.ravel(), hi)
     return lo, hi
 
 
