@@ -91,7 +91,7 @@ def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to
     return new_line
 
 
-def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_startend_points=True):
+def best_line_fit(img: np.array, line, line_thickness=3, max_iterations=30, scale=1.0, skip_startend_points=False ):
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.copy()
     change = True
@@ -105,7 +105,7 @@ def best_line_fit(img:np.array, line, line_thickness=3, max_iterations=30, skip_
                 if point_ind == 0 or point_ind == len(best_line):
                     continue
             y, x = point[0], point[1]
-            for i in range(1, 2):
+            for i in range(1, line_thickness * np.ceil(scale).astype(int)):
                 test_line = best_line.copy()
                 test_line[point_ind] = [y + i, x]
                 blackness = get_blackness_of_line(test_line, img)

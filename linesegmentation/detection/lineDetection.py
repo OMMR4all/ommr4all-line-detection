@@ -165,7 +165,7 @@ class LineDetection(LineDetector):
 
         elif self.settings.best_fit_postprocess:
             staff_list = line_fitting(staff_list, 1)
-            staff_list = self.best_fit_systems(staff_list, image_data.image, staff_line_height,
+            staff_list = self.best_fit_systems(staff_list, image_data.image, image_data.binary_image, staff_line_height,
                                                self.settings.best_fit_scale)
 
         staff_list = check_systems(staff_list, binary_image)

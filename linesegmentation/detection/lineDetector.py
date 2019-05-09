@@ -411,11 +411,8 @@ class LineDetector():
             plt.show()
         return new_staff_lines
 
-    def best_fit_systems(self, system_list, image, lt, scale=2.0):
-        image_cp = image.copy()
-
-        # punish white pixels more
-        image_cp[image_cp > 0.8] *= 2
+    def best_fit_systems(self, system_list, gray_image, binary_image, lt, scale=2.0):
+        image_cp = gray_image + binary_image
         scaled_image = resize_image(image_cp * 255, scale)
 
         staff_list = []
@@ -427,7 +424,7 @@ class LineDetector():
                 line = simplify_anchor_points(line, max_distance=(last_x_point - first_x_point) / 15,
                                               min_distance=(last_x_point - first_x_point) / 30)
                 scaled_line = scale_line(line, scale)
-                new_line = best_line_fit(scaled_image, scaled_line, lt)
+                new_line = best_line_fit(scaled_image, scaled_line, lt, scale = scale)
                 new_line = scale_line(new_line, 1.0 / scale)
                 new_system.append(new_line)
             staff_list.append(new_system)
