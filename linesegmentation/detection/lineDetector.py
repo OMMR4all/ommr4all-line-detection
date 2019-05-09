@@ -32,11 +32,10 @@ class LineDetectionSettings(NamedTuple):
     smooth_lines_advdebug: bool = False
     line_fit_distance: float = 0.5
     model: Optional[str] = None
-    model_foreground_threshold = 0.5
-    best_fit_postprocess = True
+    model_foreground_threshold: float = 0.5
+    best_fit_postprocess: bool = True
     best_fit_scale = 2.0
-
-    debug_model = False
+    debug_model: bool = False
     processes: int = 12
 
 
@@ -412,7 +411,7 @@ class LineDetector():
         return new_staff_lines
 
     def best_fit_systems(self, system_list, gray_image, binary_image, lt, scale=2.0):
-        image_cp = gray_image + binary_image
+        image_cp = gray_image# + binary_image
         scaled_image = resize_image(image_cp * 255, scale)
 
         staff_list = []
