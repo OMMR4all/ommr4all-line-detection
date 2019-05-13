@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 # project specific imports
 from scipy.ndimage.morphology import binary_erosion, binary_dilation
 from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data, \
-    line_fitting, check_systems
+    line_fitting, check_systems, PostProcess
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, \
@@ -103,9 +103,9 @@ class LineDetection(LineDetector):
             yield self.detect_staff_lines(image_data)
 
     def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
-        create_data_partital = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
+        create_data_partial = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
-            data = [v for v in tqdm.tqdm(p.imap(create_data_partital, images), total=len(images))]
+            data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         for i, prob in enumerate(self.predictor.predict(data)):
             pred = (prob > self.settings.model_foreground_threshold)
             if data[i].staff_space_height is None or data[i].staff_line_height is None:
@@ -152,7 +152,7 @@ class LineDetection(LineDetector):
             staff_list = [[x] for x in line_list]
         stafflist2 = line_fitting(staff_list, 1)
 
-        if self.settings.post_process:
+        if self.settings.post_process == 2:
             staff_list = self.post_process_staff_systems(staff_list, staff_line_height, binary_image)
             if self.settings.numLine > 1 and self.settings.lineExtension:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
@@ -166,13 +166,14 @@ class LineDetection(LineDetector):
                 if self.settings.line_fit_distance > 0:
                     staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
 
-        elif self.settings.best_fit_postprocess:
+        elif self.settings.post_process == 1:
+
             staff_list = line_fitting(staff_list, 1)
             staff_list = self.best_fit_systems(staff_list, image_data.image, image_data.binary_image, staff_line_height,
                                                self.settings.best_fit_scale)
             staff_list = line_fitting(staff_list, 0.5)
 
-        staff_list = check_systems(staff_list, binary_image)
+        staff_list = check_systems(staff_list, binary_image, threshold = self.settings.system_threshold)
         # Debug
         if self.settings.debug:
             f, ax = plt.subplots(1, 2, True, True)
@@ -203,8 +204,7 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
-    setting_predictor = LineDetectionSettings(debug=True, model=model_line)
-    print(setting_predictor)
+    setting_predictor = LineDetectionSettings(debug=True, model=model_line, post_process=1)
     line_detector = LineDetection(setting_predictor)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')

@@ -131,7 +131,7 @@ def get_blackness_of_line(line, image):
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = int(x_list[0]), int(x_list[-1])
-    x_list_new = np.asarray(list(range(x_start, x_end)))
+    x_list_new = np.arange(x_start, x_end)
     y_new = func(x_list_new)
     y_new_int = np.floor(y_new + 0.5).astype(int)
     indexes = (np.array(y_new_int), np.array(x_list_new))
@@ -144,7 +144,7 @@ def get_blackness_of_line_distribution(line, image, radius=3):
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = x_list[0], x_list[-1]
-    x_list_new = np.asarray(list(range(x_start, x_end)))
+    x_list_new = np.arange(x_start, x_end)
     y_new = func(x_list_new)
     y_new_int = np.floor((y_new + 0.5)).astype(int)
     avg_blackness = 0
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/test/line_test_image.jpg')
 
-    factor_t = 2.0
+    factor_t = 4.0
     image_t = np.array(Image.open(page_path))
     line_t = [[130, 50], [133, 90], [134, 108], [136, 110], [131, 128], [138, 131], [139, 147], [142, 151], [142, 191],
             [140, 238], [149, 241], [149, 336], [150, 350], [142, 359], [148, 380], [152, 384], [142, 390], [152, 397],

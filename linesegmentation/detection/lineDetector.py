@@ -14,9 +14,27 @@ from collections import defaultdict
 from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
 from linesegmentation.preprocessing.preprocessingUtil import resize_image
+from enum import Enum, IntEnum
 
+
+#class PostProcess(IntEnum):
+#    best_fit = 1
+#    post_process = 2
+
+
+class PostProcess(Enum):
+    best_fit = (True, False)
+    post_process = (False, False)
+
+    def __init__(self, use, debug):
+        self.use = use
+        self.debug = debug
+
+    def set_use(self, use: bool):
+        use = use
 
 class LineDetectionSettings(NamedTuple):
+
     numLine: int = 4
     minLineNum: int = 3
     minLength: int = 6
@@ -24,8 +42,7 @@ class LineDetectionSettings(NamedTuple):
     debug: bool = False
     lineSpaceHeight: int = 20
     targetLineSpaceHeight: int = 10
-    post_process: bool = False
-    post_process_debug: bool = False
+
     smooth_lines: int = 0 # 0 = Off, 1 = basic Smoothing, 2 = Advanced Smoothing (slower)
     smooth_value_lowpass: float = 5
     smooth_value_adv: int = 25
@@ -33,10 +50,15 @@ class LineDetectionSettings(NamedTuple):
     line_fit_distance: float = 0.5
     model: Optional[str] = None
     model_foreground_threshold: float = 0.5
-    best_fit_postprocess: bool = True
-    best_fit_scale: float = 2.0
+
+    system_threshold: float = 0.0
     debug_model: bool = False
     processes: int = 12
+    post_process: int = 1
+    best_fit_scale: float = 2.0
+
+    #post_process_t = PostProcess
+    #post_process_t = post_process_t.best_fit.use
 
 
 def approximate_blackness_of_line(line, image):
@@ -513,7 +535,6 @@ def check_systems(line_list, binary_image, threshold=0.7):
         line_blackness = []
         for line in system:
             line_blackness.append(get_blackness_of_line(line, binary_image))
-        # print(np.mean(line_blackness))
         if np.mean(line_blackness) < threshold:
             new_line_list.append(system)
     return new_line_list
