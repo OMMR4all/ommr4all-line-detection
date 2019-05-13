@@ -176,7 +176,9 @@ class LineDetection(LineDetector):
         # Debug
         if self.settings.debug:
             f, ax = plt.subplots(1, 2, True, True)
-            ax[0].imshow(binary_image, cmap='gray')
+            extent_b = (0, binary_image.shape[1], binary_image.shape[0], 0)
+
+            ax[0].imshow(binary_image, cmap='gray', extent=extent_b)
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(stafflist2)))
 
@@ -186,7 +188,8 @@ class LineDetection(LineDetector):
                     ax[0].plot(x, y, color=color)
                     ax[0].plot(x, y, "bo")
 
-            ax[1].imshow(image_data.image, cmap='gray')
+            extent_g = (0, image_data.image.shape[1], image_data.image.shape[0], 0)
+            ax[1].imshow(image_data.image, cmap='gray', extent = extent_g)
             for system, color in zip(staff_list, colors):
                 for staff in system:
                     y, x = zip(*staff)

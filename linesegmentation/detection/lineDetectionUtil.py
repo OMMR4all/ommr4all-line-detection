@@ -191,7 +191,7 @@ if __name__ == "__main__":
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/test/line_test_image.jpg')
 
-    factor_t = 4.0
+    factor_t = 2.0
     image_t = np.array(Image.open(page_path))
     line_t = [[130, 50], [133, 90], [134, 108], [136, 110], [131, 128], [138, 131], [139, 147], [142, 151], [142, 191],
             [140, 238], [149, 241], [149, 336], [150, 350], [142, 359], [148, 380], [152, 384], [142, 390], [152, 397],
@@ -199,18 +199,26 @@ if __name__ == "__main__":
               [191, 616], [185, 627]]
     image_cp = image_t.copy()
     scaled_image = resize_image(image_cp, factor_t)
-    y_p, x_p = zip(*line_t)
+    extent = (0, image_t.shape[1], image_t.shape[0], 0)
+    line_a = np.asarray(line_t)
+    y_p = line_a[:, 0]
+    x_p = line_a[:, 1]
+
+    #y_p, x_p = zip(*line_t)
     yc, ax = plt.subplots(1, 2, True, True)
-    ax[0].imshow(image_t, cmap="gray")
+    ax[0].imshow(image_t, cmap="gray", extent=extent)
     ax[0].plot(x_p, y_p,)
     ax[0].plot(x_p, y_p, "bo")
-    scaled_line = scale_line(line_t, factor_t)
+    scaled_line = scale_line(line_a, factor_t)
     scaled_line = best_line_fit(scaled_image, scaled_line, line_thickness=3, max_iterations=30, scale=factor_t,
                                 skip_startend_points=False)
     scale_line = scale_line(scaled_line, 1.0 / factor_t)
-
-    y_p, x_p = zip(*scale_line)
-    ax[1].imshow(image_t, cmap="gray")
+    line_a = np.asarray(scale_line)
+    y_p = line_a[:, 0]
+    x_p = line_a[:, 1]
+    ax[1].imshow(image_t, cmap="gray", extent=extent)
     ax[1].plot(x_p, y_p)
     ax[1].plot(x_p, y_p, "bo")
     plt.show()
+
+
