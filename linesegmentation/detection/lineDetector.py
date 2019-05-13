@@ -14,12 +14,7 @@ from collections import defaultdict
 from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
 from linesegmentation.preprocessing.preprocessingUtil import resize_image
-from enum import Enum, IntEnum
-
-
-#class PostProcess(IntEnum):
-#    best_fit = 1
-#    post_process = 2
+from enum import Enum
 
 
 class PostProcess(Enum):
@@ -44,7 +39,7 @@ class LineDetectionSettings(NamedTuple):
     lineSpaceHeight: int = 20
     targetLineSpaceHeight: int = 10
 
-    smooth_lines: int = 0 # 0 = Off, 1 = basic Smoothing, 2 = Advanced Smoothing (slower)
+    smooth_lines: int = 0  # 0 = Off, 1 = basic Smoothing, 2 = Advanced Smoothing (slower)
     smooth_value_lowpass: float = 5
     smooth_value_adv: int = 25
     smooth_lines_advdebug: bool = False
@@ -55,11 +50,8 @@ class LineDetectionSettings(NamedTuple):
     system_threshold: float = 1.0
     debug_model: bool = False
     processes: int = 12
-    post_process: int = 1
+    post_process: int = 1  # 0 = Off, 1 = best fit, 2 = post_process
     best_fit_scale: float = 2.0
-
-    #post_process_t = PostProcess
-    #post_process_t = post_process_t.best_fit.use
 
 
 def approximate_blackness_of_line(line, image):
