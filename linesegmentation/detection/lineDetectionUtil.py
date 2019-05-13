@@ -191,10 +191,12 @@ if __name__ == "__main__":
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/test/line_test_image.jpg')
 
-    factor_t = 2.0
+    factor_t = 4.0
     image_t = np.array(Image.open(page_path))
     line_t = [[130, 50], [133, 90], [134, 108], [136, 110], [131, 128], [138, 131], [139, 147], [142, 151], [142, 191],
-            [140, 238], [149, 241], [149, 336]]
+            [140, 238], [149, 241], [149, 336], [150, 350], [142, 359], [148, 380], [152, 384], [142, 390], [152, 397],
+              [140, 432], [177, 466], [195, 532], [188, 544], [200,  557], [205, 580], [193, 585], [205, 592],
+              [191, 616], [185, 627]]
     image_cp = image_t.copy()
     scaled_image = resize_image(image_cp, factor_t)
     y_p, x_p = zip(*line_t)
