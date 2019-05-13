@@ -34,7 +34,7 @@ class LineDetectionSettings(NamedTuple):
     model: Optional[str] = None
     model_foreground_threshold: float = 0.5
     best_fit_postprocess: bool = True
-    best_fit_scale = 2.0
+    best_fit_scale: float = 2.0
     debug_model: bool = False
     processes: int = 12
 
@@ -60,14 +60,14 @@ def create_data(image: np.ndarray, line_space_height):
     staff_line_height = None
     binary_image = gauss_threshold(image) / 255
     if line_space_height == 0:
-        staff_space_height, staff_line_height = sum(vertical_runs(binary_image))
-        space_height = sum(staff_space_height, staff_line_height)
+        staff_space_height, staff_line_height = vertical_runs(binary_image)
+        space_height = staff_space_height + staff_line_height
     image_data = ImageData(height=space_height, image=norm_img, staff_line_height=staff_line_height,
                            staff_space_height=staff_space_height, binary_image=binary_image)
     return image_data
 
 
-class LineDetector():
+class LineDetector:
     def __init__(self, settings: LineDetectionSettings):
         """Constructor of the LineDetector class
 
