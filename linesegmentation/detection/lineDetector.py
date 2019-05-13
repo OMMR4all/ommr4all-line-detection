@@ -33,6 +33,7 @@ class PostProcess(Enum):
     def set_use(self, use: bool):
         use = use
 
+
 class LineDetectionSettings(NamedTuple):
 
     numLine: int = 4
@@ -51,7 +52,7 @@ class LineDetectionSettings(NamedTuple):
     model: Optional[str] = None
     model_foreground_threshold: float = 0.5
 
-    system_threshold: float = 0.0
+    system_threshold: float = 1.0
     debug_model: bool = False
     processes: int = 12
     post_process: int = 1
