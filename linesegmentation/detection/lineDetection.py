@@ -169,7 +169,8 @@ class LineDetection(LineDetector):
 
         else:
             staff_list = [[x] for x in line_list]
-        stafflist2 = line_fitting(staff_list, 1)
+        if self.settings.debug:
+            staff_list_debug = line_fitting(staff_list, 1)
         self.callback.update_current_page_state()
 
         if self.settings.post_process == 2:
@@ -208,9 +209,9 @@ class LineDetection(LineDetector):
 
             ax[0].imshow(binary_image, cmap='gray', extent=extent_b)
             cmap = plt.get_cmap('jet')
-            colors = cmap(np.linspace(0, 1.0, len(stafflist2)))
+            colors = cmap(np.linspace(0, 1.0, len(staff_list_debug)))
 
-            for system, color in zip(stafflist2, colors):
+            for system, color in zip(staff_list_debug, colors):
                 for staff in system:
                     y, x = zip(*staff)
                     ax[0].plot(x, y, color=color)
