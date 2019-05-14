@@ -14,15 +14,15 @@ from collections import defaultdict
 from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
 from linesegmentation.preprocessing.preprocessingUtil import resize_image
-from enum import Enum
+from enum import IntEnum
 
 
-class PostProcess(Enum):
+class PostProcess(IntEnum):
     best_fit_process = 1
     flat_post_process = 2
 
 
-class SmoothLines(Enum):
+class SmoothLines(IntEnum):
     off = 0
     basic_smoothing = 1
     advanced_smoothing = 2
@@ -49,7 +49,7 @@ class LineDetectionSettings(NamedTuple):
     system_threshold: float = 1.0
     debug_model: bool = False
     processes: int = 12
-    post_process: int = PostProcess.best_fit_process
+    post_process: PostProcess = PostProcess.best_fit_process
     best_fit_scale: float = 2.0
 
 

@@ -173,7 +173,7 @@ class LineDetection(LineDetector):
             staff_list_debug = line_fitting(staff_list, 1)
         self.callback.update_current_page_state()
 
-        if self.settings.post_process == 2:
+        if self.settings.post_process == PostProcess.flat_post_process:
             staff_list = self.post_process_staff_systems(staff_list, staff_line_height, binary_image)
             if self.settings.numLine > 1 and self.settings.lineExtension:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
@@ -189,7 +189,7 @@ class LineDetection(LineDetector):
                     staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
             self.callback.update_current_page_state()
 
-        elif self.settings.post_process == 1:
+        elif self.settings.post_process == PostProcess.best_fit_process:
 
             staff_list = line_fitting(staff_list, 1)
             self.callback.update_current_page_state()
