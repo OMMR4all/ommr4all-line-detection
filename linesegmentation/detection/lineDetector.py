@@ -18,15 +18,14 @@ from enum import Enum
 
 
 class PostProcess(Enum):
-    best_fit = (True, False)
-    post_process = (False, False)
+    best_fit_process = 1
+    flat_post_process = 2
 
-    def __init__(self, use, debug):
-        self.use = use
-        self.debug = debug
 
-    def set_use(self, use: bool):
-        use = use
+class SmoothLines(Enum):
+    off = 0
+    basic_smoothing = 1
+    advanced_smoothing = 2
 
 
 class LineDetectionSettings(NamedTuple):
@@ -39,10 +38,10 @@ class LineDetectionSettings(NamedTuple):
     lineSpaceHeight: int = 20
     targetLineSpaceHeight: int = 10
 
-    smooth_lines: int = 0  # 0 = Off, 1 = basic Smoothing, 2 = Advanced Smoothing (slower)
-    smooth_value_lowpass: float = 5
+    smooth_lines: int = SmoothLines.off
+    smooth_value_low_pass: float = 5
     smooth_value_adv: int = 25
-    smooth_lines_advdebug: bool = False
+    smooth_lines_adv_debug: bool = False
     line_fit_distance: float = 0.5
     model: Optional[str] = None
     model_foreground_threshold: float = 0.5
@@ -50,7 +49,7 @@ class LineDetectionSettings(NamedTuple):
     system_threshold: float = 1.0
     debug_model: bool = False
     processes: int = 12
-    post_process: int = 1  # 0 = Off, 1 = best fit, 2 = post_process
+    post_process: int = PostProcess.best_fit_process
     best_fit_scale: float = 2.0
 
 
@@ -413,7 +412,7 @@ class LineDetector:
                 new_system.append(line)
             new_staff_lines.append(new_system)
 
-        if self.settings.smooth_lines_advdebug:
+        if self.settings.smooth_lines_adv_debug:
             f, ax = plt.subplots(1, 2, True, True)
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, len(new_staff_lines)))
