@@ -8,7 +8,6 @@ class LineDetectionCallback:
         self.__state = 0
         self.__page_state = 0
         self.__total_steps = total_steps
-        self.changed()
 
     def get_progress(self):
         return self.__state / self.__total_pages
@@ -45,6 +44,6 @@ class DummyLineDetectionCallback(LineDetectionCallback):
         print("Total progress: {} Page progress: {}".format(self.get_progress(), self.get_current_page_progress()))
         pass
 
-    def __init__(self, total_steps, total_pages):
+    def __init__(self, total_steps=7, total_pages=1):
         super().__init__(total_steps, total_pages)
 
