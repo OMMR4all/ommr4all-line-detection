@@ -16,7 +16,7 @@ from linesegmentation.preprocessing.binarization.ocropus_binarizer import binari
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, \
     normalize_connected_components
-from linesegmentation.detection.lineDetectionCallback import LineDetectionCallback
+from linesegmentation.detection.lineDetectionCallback import LineDetectionCallback, DummyLineDetectionCallback
 
 
 class LineDetection(LineDetector):
@@ -112,7 +112,7 @@ class LineDetection(LineDetector):
             image_data.horizontal_runs_img = calculate_horizontal_runs((1 - staffs), self.settings.minLength)
             self.callback.update_current_page_state()
             yield self.detect_staff_lines(image_data)
-        self.callback.state += 1
+        self.callback.update_total_state()
 
     def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
         self.callback.total_pages = len(images)
@@ -122,7 +122,7 @@ class LineDetection(LineDetector):
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         for i, prob in enumerate(self.predictor.predict(data)):
-            self.callback.page_state = 0
+            self.callback.reset_page_state()
             pred = (prob > self.settings.model_foreground_threshold)
             self.callback.update_current_page_state()
             if data[i].staff_space_height is None or data[i].staff_line_height is None:
@@ -136,7 +136,7 @@ class LineDetection(LineDetector):
                 ax[2].imshow(data[i].horizontal_runs_img)
                 plt.show()
             yield self.detect_staff_lines(data[i])
-        self.callback.state += 1
+        self.callback.update_total_state()
 
     def detect_staff_lines(self, image_data: ImageData):
         img = image_data.horizontal_runs_img
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
     setting_predictor = LineDetectionSettings(debug=True, model=model_line, post_process=1)
-    callback = LineDetectionCallback()
+    callback = DummyLineDetectionCallback(total_steps=7, total_pages=1)
     line_detector = LineDetection(setting_predictor, callback)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')

@@ -1,29 +1,57 @@
+from abc import ABC, abstractmethod
 
 
 class LineDetectionCallback:
-    def __init__(self):
+    def __init__(self, total_steps, total_pages):
         super().__init__()
-        self.state = 0
-        self.total_pages = 1
-        self.page_state = 0
-        self.total_steps = 12
+        self.__total_pages = total_pages
+        self.__state = 0
+        self.__page_state = 0
+        self.__total_steps = total_steps
+        self.changed()
 
-    def init(self, state, page_state, total_steps, total_pages):
-        self.total_pages = total_pages
-        self.state = state
-        self.page_state = page_state
-        self.total_steps = total_steps
+    def init(self, total_steps, total_pages):
+        self.__total_pages = total_pages
+        self.__state = 0
+        self.__page_state = 0
+        self.__total_steps = total_steps
+        self.changed()
 
     def get_progress(self):
-        return self.state / self.total_pages
+        return self.__state / self.__total_pages
 
     def get_current_page_progress(self):
-        return self.page_state / self.total_steps
+        return self.__page_state / self.__total_steps
 
-    def update_current_page_state(self, state = None):
+    def update_current_page_state(self, state=None):
         if state is not None:
-            self.page_state = 0
+            self.__page_state = 0
         else:
-            self.page_state += 1
+            self.__page_state += 1
+        self.changed()
 
+    def update_total_state(self):
+        self.__state += 1
+        self.changed()
+
+    def reset_page_state(self):
+        self.__state = 0
+        self.changed()
+
+    def reset_total_state(self):
+        self.__page_state = 0
+        self.changed()
+
+    @abstractmethod
+    def changed(self):
+        pass
+
+
+class DummyLineDetectionCallback(LineDetectionCallback):
+    def changed(self):
+        print("Total progress: {} Page progress: {}".format(self.get_progress(), self.get_current_page_progress()))
+        pass
+
+    def __init__(self, total_steps, total_pages):
+        super().__init__(total_steps, total_pages)
 
