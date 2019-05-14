@@ -225,6 +225,7 @@ class LineDetection(LineDetector):
                     ax[1].plot(x, y, color=color)
                     ax[1].plot(x, y, "bo")
             plt.show()
+
         return staff_list
 
 
