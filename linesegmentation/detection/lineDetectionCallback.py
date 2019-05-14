@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class LineDetectionCallback:
-    def __init__(self, total_steps, total_pages):
+    def __init__(self, total_steps=7, total_pages=1):
         super().__init__()
         self.__total_pages = total_pages
         self.__state = 0
