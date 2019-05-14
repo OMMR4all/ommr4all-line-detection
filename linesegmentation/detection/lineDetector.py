@@ -385,7 +385,7 @@ class LineDetector:
             new_system = []
             for line in system:
                 y, x = zip(*line)
-                y = smooth_array(list(y), self.settings.smooth_value_lowpass)
+                y = smooth_array(list(y), self.settings.smooth_value_low_pass)
                 line = list(zip(y, x))
                 new_system.append(line)
             new_staff_lines.append(new_system)
