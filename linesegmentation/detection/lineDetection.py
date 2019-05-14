@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 # project specific imports
 from scipy.ndimage.morphology import binary_erosion, binary_dilation
 from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data, \
-    line_fitting, check_systems, PostProcess
+    line_fitting, check_systems, PostProcess, SmoothLines
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, \
@@ -173,23 +173,23 @@ class LineDetection(LineDetector):
             staff_list_debug = line_fitting(staff_list, 1)
         self.callback.update_current_page_state()
 
-        if self.settings.post_process == 2:
+        if self.settings.post_process == PostProcess.FLAT:
             staff_list = self.post_process_staff_systems(staff_list, staff_line_height, binary_image)
             if self.settings.numLine > 1 and self.settings.lineExtension:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
             self.callback.update_current_page_state()
 
-            if self.settings.smooth_lines != 0:
-                if self.settings.smooth_lines == 1:
+            if self.settings.smooth_lines == SmoothLines.OFF:
+                if self.settings.smooth_lines == SmoothLines.BASIC:
                     staff_list = self.smooth_lines(staff_list)
-                if self.settings.smooth_lines == 2:
+                if self.settings.smooth_lines == SmoothLines.ADVANCE:
                     staff_list = self.smooth_lines_advanced(staff_list)
 
                 if self.settings.line_fit_distance > 0:
                     staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
             self.callback.update_current_page_state()
 
-        elif self.settings.post_process == 1:
+        elif self.settings.post_process == PostProcess.BESTFIT:
 
             staff_list = line_fitting(staff_list, 1)
             self.callback.update_current_page_state()
