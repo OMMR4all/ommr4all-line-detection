@@ -10,13 +10,6 @@ class LineDetectionCallback:
         self.__total_steps = total_steps
         self.changed()
 
-    def init(self, total_steps, total_pages):
-        self.__total_pages = total_pages
-        self.__state = 0
-        self.__page_state = 0
-        self.__total_steps = total_steps
-        self.changed()
-
     def get_progress(self):
         return self.__state / self.__total_pages
 
