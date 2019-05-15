@@ -1,4 +1,4 @@
-#Line Detection on historical handwritten documents
+# Line Detection on historical handwritten documents
 
 Line segmentation algorithms for the OMMR4all project, originally created by Alexander Hartelt.
 
@@ -36,11 +36,11 @@ to be installed locally.
  
 Note that there are several important and optional parameters to adjust and enhance the prediction.
 
-For a full list type `line-segmentation-predictit --help` 
+For a full list type `line-segmentation-predict --help` 
 
 ## Example
 
-input             |  Predicted Lines
+Input             |  Predicted Lines
 :-------------------------:|:-------------------------:|
 ![Input](linesegmentation/demo/images/example/input.png) | ![Prediction](linesegmentation/demo/images/example/result_example.png)
  
