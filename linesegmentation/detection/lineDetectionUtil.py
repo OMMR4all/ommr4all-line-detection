@@ -4,9 +4,10 @@ import numpy as np
 from itertools import tee
 from scipy.interpolate import interpolate
 from numpy.linalg import norm
+from typing import List
 
 
-def get_text_borders(image, preprocess=False, min_dist=30, thres=0.3):
+def get_text_borders(image: np.ndarray, preprocess: bool = False, min_dist: int = 30, thres: float = 0.3):
     med = image.copy()
     if preprocess:
         med = medfilt2d(image, 9)
@@ -59,7 +60,7 @@ def vertical_runs(img: np.array):
     return white_r, black_r
 
 
-def angle_difference_of_points(x1, y1, x2, y2):
+def angle_difference_of_points(x1: int, y1: int, x2: int, y2: int):
     v1 = np.array([x1, y1])
     v2 = np.array([x2, y2])
 
@@ -68,7 +69,8 @@ def angle_difference_of_points(x1, y1, x2, y2):
     return angle_difference
 
 
-def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to_keep_points=0.2):
+def simplify_anchor_points(line: List[List[int]], max_distance: int = 25, min_distance: int = 10,
+                           min_degree_to_keep_points: float = 0.2):
     new_line = []
 
     def distance(p1, p2):
@@ -91,7 +93,8 @@ def simplify_anchor_points(line, max_distance=25, min_distance=10, min_degree_to
     return new_line
 
 
-def best_line_fit(img: np.array, line, line_thickness=3, max_iterations=30, scale=1.0, skip_startend_points=False):
+def best_line_fit(img: np.array, line: List[List[int]], line_thickness: int = 3, max_iterations: int = 30,
+                  scale: float = 1.0, skip_startend_points: bool = False):
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.copy()
     change = True
@@ -127,7 +130,7 @@ def best_line_fit(img: np.array, line, line_thickness=3, max_iterations=30, scal
     return best_line
 
 
-def get_blackness_of_line(line, image):
+def get_blackness_of_line(line: List[List[int]], image: np.ndarray):
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = int(x_list[0]), int(x_list[-1])
@@ -140,7 +143,7 @@ def get_blackness_of_line(line, image):
 
 
 # Used for testing
-def get_blackness_of_line_distribution(line, image, radius=3):
+def get_blackness_of_line_distribution(line: List[List[int]], image: np.ndarray, radius: int = 3):
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = x_list[0], x_list[-1]
@@ -179,7 +182,7 @@ def calculate_horizontal_runs(img: np.array, min_length: int):
     return np_matrix
 
 
-def scale_line(line, factor):
+def scale_line(line: List[List[int]], factor: float):
     return [[point[0] * factor, point[1] * factor] for point in line]
 
 

@@ -150,9 +150,6 @@ class LineDetection(LineDetector):
         # Remove lines which are shorter than 50px
         line_list = [l for l in line_list if l[-1][1] - l[0][1] > 50]
 
-        # Debug
-        staff2 = line_list.copy()
-
         line_list = self.prune_small_lines(line_list, staff_space_height)
 
         if self.settings.numLine > 1:
@@ -167,8 +164,8 @@ class LineDetection(LineDetector):
             staff_list = [[x] for x in line_list]
         if self.settings.debug:
             staff_list_debug = polyline_simplification(staff_list,
-                                                 algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
-                                                 ramer_dougler_dist=0.5)
+                                                       algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
+                                                       ramer_dougler_dist=0.5)
         self.callback.update_current_page_state()
 
         if self.settings.post_process == PostProcess.FLAT:

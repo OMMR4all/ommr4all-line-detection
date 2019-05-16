@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 
 class LineDetectionCallback:
@@ -42,6 +43,8 @@ class LineDetectionCallback:
 class DummyLineDetectionCallback(LineDetectionCallback):
     def changed(self):
         print("Total progress: {} Page progress: {}".format(self.get_progress(), self.get_current_page_progress()))
+        print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+
         pass
 
     def __init__(self, total_steps=7, total_pages=1):

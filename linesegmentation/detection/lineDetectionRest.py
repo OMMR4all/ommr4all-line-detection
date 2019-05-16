@@ -4,8 +4,8 @@ from PIL import Image
 import numpy as np
 from functools import partial
 from matplotlib import pyplot as plt
-from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, create_data, ImageData, \
-    line_fitting
+from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, create_data, ImageData,\
+    LineSimplificationAlgorithm, polyline_simplification
 from linesegmentation.detection.lineDetectionUtil import get_text_borders, vertical_runs, calculate_horizontal_runs
 from pagesegmentation.lib.predictor import PredictSettings
 from linesegmentation.pixelclassifier.predictor import PCPredictor
@@ -67,7 +67,8 @@ class LineDetectionRest(LineDetector):
                 text_borders = get_text_borders((1 - binary)*255, preprocess=True)
                 yield self.detect_staff_lines_rest(data[i], text_borders)
 
-    def organize_lines_in_systems(self, line_list, staff_space_height, staff_line_height, text_height):
+    def organize_lines_in_systems(self, line_list: List[List[List[int]]], staff_space_height: int,
+                                  staff_line_height: int, text_height: int):
         medium_staff_height = [np.mean([y_c for y_c, x_c in staff]) for staff in line_list]
         staffindices = []
         prev_text_height = 0
@@ -94,7 +95,7 @@ class LineDetectionRest(LineDetector):
             staff_list.append(system)
         return staff_list
 
-    def detect_staff_lines_rest(self, image_data: ImageData, text_height):
+    def detect_staff_lines_rest(self, image_data: ImageData, text_height: int):
         img = image_data.horizontal_runs_img
         staff_line_height = image_data.staff_line_height
         staff_space_height = image_data.staff_space_height
@@ -105,9 +106,6 @@ class LineDetectionRest(LineDetector):
 
         # Remove lines which are shorter than 50px
         line_list = [l for l in line_list if l[-1][1] - l[0][1] > 50]
-
-        # Debug
-        # staff2 = line_list.copy()
 
         line_list = self.prune_small_lines(line_list, staff_space_height)
 
@@ -126,7 +124,8 @@ class LineDetectionRest(LineDetector):
             if self.settings.smooth_lines == 2:
                 staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
 
-        staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
+        staff_list = polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
+                                             ramer_dougler_dist=self.settings.line_fit_distance)
 
         # Debug
         if self.settings.debug:

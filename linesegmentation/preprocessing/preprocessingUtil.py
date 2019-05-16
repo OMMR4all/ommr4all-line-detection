@@ -4,10 +4,9 @@ from collections import defaultdict
 import numpy as np
 from PIL import Image
 from skimage.transform import rescale
-import PIL
+from typing import List
 
-
-def extract_connected_components(image):
+def extract_connected_components(image: np.ndarray):
     connectivity = 8
     output = cv2.connectedComponentsWithStats(image, connectivity)
     ccdict = defaultdict(list)
@@ -22,7 +21,7 @@ def extract_connected_components(image):
     return cc_list
 
 
-def normalize_connected_components(cc_list):
+def normalize_connected_components(cc_list: List[List[int]]):
     # Normalize the CCs (line segments), so that the height of each cc is normalized to one pixel
     def normalize(point_list):
         normalized_cc_list = []
@@ -38,16 +37,16 @@ def normalize_connected_components(cc_list):
     return normalize(cc_list)
 
 
-def resize_image(image, scale, order=3):
+def resize_image(image: np.ndarray, scale: float, order=3):
     return rescale(image, scale, order=order)
 
 
-def convert_2dpoint_to_1did(list, width):
+def convert_2dpoint_to_1did(list: List[int], width: int):
     point_to_id = list[1] * width + list[0]
     return point_to_id
 
 
-def convert_2darray_to_1darray(array, width):
+def convert_2darray_to_1darray(array: np.ndarray, width: int):
     return array[:, 0] * width + array[:, 1]
 
 

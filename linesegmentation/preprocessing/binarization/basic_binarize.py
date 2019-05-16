@@ -2,6 +2,7 @@
 #from skimage.filters import threshold_otsu, threshold_adaptive
 #from skimage.filters.rank import otsu, threshold
 import cv2 as cv
+import numpy as np
 from datetime import datetime
 
 
@@ -27,9 +28,9 @@ from datetime import datetime
 #    return binary
 
 
-def gauss_threshold(image, block_size=35, offset=40):
-    binary = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, \
-                               cv.THRESH_BINARY, block_size, offset)
+def gauss_threshold(image: np.ndarray, block_size: int = 35, offset: int = 40):
+    binary = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                  cv.THRESH_BINARY, block_size, offset)
     return binary
 
 

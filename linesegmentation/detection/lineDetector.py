@@ -59,7 +59,8 @@ class LineDetectionSettings(NamedTuple):
     best_fit_scale: float = 2.0
     max_line_points: int = 30
 
-def approximate_blackness_of_line(line, image):
+
+def approximate_blackness_of_line(line: List[List[int]], image: np.ndarray):
     image = image
     y_list, x_list = zip(*line)
     func = interpolate.interp1d(x_list, y_list)
@@ -73,7 +74,7 @@ def approximate_blackness_of_line(line, image):
     return blackness
 
 
-def create_data(image: np.ndarray, line_space_height):
+def create_data(image: np.ndarray, line_space_height: int):
     space_height = line_space_height
     norm_img = image.astype(np.float32) / 255
     staff_space_height = None
@@ -108,16 +109,17 @@ class LineDetector:
             self.predictor = PCPredictor(pcsettings, settings.targetLineSpaceHeight)
 
     @staticmethod
-    def connect_connected_components_to_line(cc_list, staff_line_height, staff_space_height):
-        def connect_cc(cc_list, inplace=True):
-            def prune_cc(cc_list, length):
+    def connect_connected_components_to_line(cc_list: List[List[List[int]]], staff_line_height: int,
+                                             staff_space_height: int):
+        def connect_cc(cc_list: List[List[List[int]]], inplace: bool = True):
+            def prune_cc(cc_list: List[List[List[int]]], length: int):
                 pruned_cc_list = []
                 for cc in cc_list:
                     if abs(cc[0][1] - cc[-1][1]) > length:
                         pruned_cc_list.append(cc)
                 return pruned_cc_list
 
-            def connect(max_dists: List[int], vert_dist: int, cc_list):
+            def connect(max_dists: List[int], vert_dist: int, cc_list: List[List[List[int]]]):
                 for max_dist in max_dists:
                     i = 0
                     while i < len(cc_list):
@@ -161,7 +163,7 @@ class LineDetector:
         return connect_cc(cc_list)
 
     @staticmethod
-    def prune_small_lines(line_list, staff_space_height):
+    def prune_small_lines(line_list: List[List[List[int]]], staff_space_height: int):
         medium_staff_height = [np.mean([y_c for y_c, x_c in staff]) for staff in line_list]
         line_list_copy = line_list.copy()
         while True:
@@ -195,7 +197,8 @@ class LineDetector:
                 break
         return line_list_copy
 
-    def organize_lines_in_systems(self, line_list, staff_space_height, staff_line_height):
+    def organize_lines_in_systems(self, line_list: List[List[List[int]]], staff_space_height: int,
+                                  staff_line_height: int):
         # Calculate medium height of all staffs
         medium_staff_height = [np.mean([y_c for y_c, x_c in staff]) for staff in line_list]
         staff_indices = []
@@ -218,7 +221,7 @@ class LineDetector:
             staff_list.append(system)
         return staff_list
 
-    def prune_lines_in_system_with_lowest_intensity(self, staff_list, img):
+    def prune_lines_in_system_with_lowest_intensity(self, staff_list: List[List[List[int]]], img: np.ndarray):
         # Remove the lines with the lowest blackness value in each system, so that len(staffs) <= numLine
         prune = True
         while prune:
@@ -248,7 +251,7 @@ class LineDetector:
         return staff_list
 
     @staticmethod
-    def normalize_lines_in_system(staff_list, staff_space_height, img):
+    def normalize_lines_in_system(staff_list: List[List[List[int]]], staff_space_height: int, img: np.ndarray):
 
         for z_ind, z in enumerate(staff_list):
             sxs = [line[0][1] for line in z]
@@ -317,7 +320,7 @@ class LineDetector:
                     break
         return staff_list
 
-    def post_process_staff_systems(self, staffs_lines, line_height, image):
+    def post_process_staff_systems(self, staffs_lines: List[List[List[int]]], line_height: int, image: np.ndarray):
         post_processed_staff_systems = []
         h = image.shape[0]
         l2 = math.ceil(line_height / 2)
@@ -385,7 +388,7 @@ class LineDetector:
             plt.show()
         return post_processed_staff_systems
 
-    def smooth_lines(self, staff_lines):
+    def smooth_lines(self, staff_lines: List[List[List[int]]]):
         new_staff_lines = []
         for system in staff_lines:
             new_system = []
@@ -398,7 +401,7 @@ class LineDetector:
 
         return new_staff_lines
 
-    def smooth_lines_advanced(self, staff_lines):
+    def smooth_lines_advanced(self, staff_lines: List[List[List[int]]]):
         new_staff_lines = []
         for system in staff_lines:
             new_system = []
@@ -434,7 +437,8 @@ class LineDetector:
         return new_staff_lines
 
     @staticmethod
-    def best_fit_systems(system_list, gray_image, binary_image, lt, scale=2.0):
+    def best_fit_systems(system_list: List[List[List[int]]], gray_image: np.ndarray, binary_image: np.ndarray
+                         , lt: int, scale: float = 2.0):
         image_cp = gray_image  # + binary_image
         scaled_image = resize_image(image_cp * 255, scale)
 
@@ -454,7 +458,7 @@ class LineDetector:
         return staff_list
 
 
-def remove_hill(y, smooth=25):
+def remove_hill(y: List[int], smooth: int = 25):
     # this will modify y
     correction = True
     it = 1
@@ -494,15 +498,16 @@ def remove_hill(y, smooth=25):
                 break
 
 
-def interpolate_sequence(x_list, y_list):
+def interpolate_sequence(x_list: List[int], y_list: List[int]):
     x_list_new = range(x_list[0], x_list[-1])
     y_list_new = np.interp(x_list_new, x_list, y_list)
 
     return x_list_new, list((np.floor(y_list_new + 0.5).astype(int)))
 
 
-def polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
-                               max_points_vw=30, ramer_dougler_dist=0.5):
+def polyline_simplification(staff_list: List[List[List[int]]],
+                            algorithm: LineSimplificationAlgorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
+                            max_points_vw: int = 30, ramer_dougler_dist: float = 0.5):
     new_staff_list = []
     for system in staff_list:
         new_system = []
@@ -521,19 +526,19 @@ def polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.VI
     return new_staff_list
 
 
-def _vec2d_dist(p1, p2):
+def _vec2d_dist(p1: List[int], p2: List[int]):
     return (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
 
 
-def _vec2d_sub(p1, p2):
+def _vec2d_sub(p1: List[int], p2: List[int]):
     return p1[0]-p2[0], p1[1]-p2[1]
 
 
-def _vec2d_mult(p1, p2):
+def _vec2d_mult(p1: List[int], p2: List[int]):
     return p1[0]*p2[0] + p1[1]*p2[1]
 
 
-def check_systems(line_list, binary_image, threshold=0.7):
+def check_systems(line_list: List[List[List[int]]], binary_image: np.ndarray, threshold: float = 0.7):
 
     new_line_list = []
     for system in line_list:
@@ -545,7 +550,7 @@ def check_systems(line_list, binary_image, threshold=0.7):
     return new_line_list
 
 
-def ramerdouglas(line, dist):
+def ramerdouglas(line: List[List[int]], dist: float):
     """Does Ramer-Douglas-Peucker simplification of a curve with `dist`
     threshold.
     https://stackoverflow.com/questions/2573997/reduce-number-of-points-in-line
