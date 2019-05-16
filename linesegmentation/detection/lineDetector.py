@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
 from linesegmentation.preprocessing.preprocessingUtil import resize_image
 from enum import IntEnum
+from linesegmentation.preprocessing.polysimplify import VWSimplifier
 
 
 class PostProcess(IntEnum):
@@ -26,6 +27,11 @@ class SmoothLines(IntEnum):
     OFF = 0
     BASIC = 1
     ADVANCE = 2
+
+
+class LineSimplificationAlgorithm(IntEnum):
+    RAMER_DOUGLER_PEUCKLER = 1
+    VISVALINGAM_WHYATT = 2
 
 
 class LineDetectionSettings(NamedTuple):
@@ -51,7 +57,7 @@ class LineDetectionSettings(NamedTuple):
     processes: int = 12
     post_process: PostProcess = PostProcess.BESTFIT
     best_fit_scale: float = 2.0
-
+    max_line_points: int = 30
 
 def approximate_blackness_of_line(line, image):
     image = image
@@ -495,13 +501,20 @@ def interpolate_sequence(x_list, y_list):
     return x_list_new, list((np.floor(y_list_new + 0.5).astype(int)))
 
 
-def line_fitting(staff_list, dist=0.5):
+def polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
+                               max_points_vw=30, ramer_dougler_dist=0.5):
     new_staff_list = []
     for system in staff_list:
         new_system = []
         for line in system:
-            line = np.flip(np.asarray(line), axis=-1)
-            simplified = ramerdouglas(line.tolist(), dist=dist)
+            line = np.flip(np.asarray(line, dtype=np.float64), axis=-1)
+            simplified = line
+            if algorithm is LineSimplificationAlgorithm.VISVALINGAM_WHYATT:
+                simplifier = VWSimplifier(line)
+                simplified = simplifier.from_number(max_points_vw)
+            elif algorithm is LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER:
+                simplified = ramerdouglas(line.tolist(), dist=ramer_dougler_dist)
+
             simplified = np.flip(np.asarray(simplified), axis=-1)
             new_system.append(simplified.tolist())
         new_staff_list.append(new_system)

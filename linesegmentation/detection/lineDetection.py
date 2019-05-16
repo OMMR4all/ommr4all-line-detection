@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 # project specific imports
 from scipy.ndimage.morphology import binary_erosion, binary_dilation
 from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, ImageData, create_data, \
-    line_fitting, check_systems, PostProcess, SmoothLines
+    check_systems, PostProcess, SmoothLines, polyline_simplification, LineSimplificationAlgorithm
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, \
@@ -88,8 +88,6 @@ class LineDetection(LineDetector):
             return self.detect_fcn(images)
 
     def detect_morphological(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
-        self.callback.total_pages = len(images)
-        self.callback.total_steps = 7
 
         for img in images:
             self.callback.page_state = 0
@@ -115,8 +113,6 @@ class LineDetection(LineDetector):
         self.callback.update_total_state()
 
     def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
-        self.callback.total_pages = len(images)
-        self.callback.total_steps = 7
 
         create_data_partial = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
@@ -170,7 +166,9 @@ class LineDetection(LineDetector):
         else:
             staff_list = [[x] for x in line_list]
         if self.settings.debug:
-            staff_list_debug = line_fitting(staff_list, 1)
+            staff_list_debug = polyline_simplification(staff_list,
+                                                 algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
+                                                 ramer_dougler_dist=0.5)
         self.callback.update_current_page_state()
 
         if self.settings.post_process == PostProcess.FLAT:
@@ -186,21 +184,27 @@ class LineDetection(LineDetector):
                     staff_list = self.smooth_lines_advanced(staff_list)
 
                 if self.settings.line_fit_distance > 0:
-                    staff_list = line_fitting(staff_list, self.settings.line_fit_distance)
+                    staff_list = polyline_simplification(staff_list,
+                                                         algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
+                                                         ramer_dougler_dist=self.settings.line_fit_distance)
             self.callback.update_current_page_state()
 
         elif self.settings.post_process == PostProcess.BESTFIT:
 
-            staff_list = line_fitting(staff_list, 1)
+            staff_list = polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
+                                                 max_points_vw=self.settings.max_line_points)
+
             self.callback.update_current_page_state()
 
             staff_list = self.best_fit_systems(staff_list, image_data.image, image_data.binary_image, staff_line_height,
                                                self.settings.best_fit_scale)
             self.callback.update_current_page_state()
 
-            staff_list = line_fitting(staff_list, 0.5)
+            staff_list = polyline_simplification(staff_list,
+                                                 algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
+                                                 ramer_dougler_dist=0.5)
 
-        staff_list = check_systems(staff_list, binary_image, threshold=self.settings.system_threshold)
+        staff_list = check_systems(staff_list, binary_image, threshold=self.settings.line_fit_distance)
         self.callback.update_current_page_state()
         # Debug
         if self.settings.debug:

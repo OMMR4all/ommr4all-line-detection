@@ -41,6 +41,7 @@ def normalize_connected_components(cc_list):
 def resize_image(image, scale, order=3):
     return rescale(image, scale, order=order)
 
+
 def convert_2dpoint_to_1did(list, width):
     point_to_id = list[1] * width + list[0]
     return point_to_id

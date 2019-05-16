@@ -1,4 +1,3 @@
-import os
 import multiprocessing
 import tqdm
 from PIL import Image
