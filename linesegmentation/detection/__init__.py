@@ -1,1 +1,1 @@
-from .lineDetection import LineDetection, LineDetectionSettings
+from .detection import LineDetection, LineDetectionSettings

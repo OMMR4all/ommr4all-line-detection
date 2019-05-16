@@ -189,7 +189,7 @@ def scale_line(line: List[List[int]], factor: float):
 if __name__ == "__main__":
     from PIL import Image
     from matplotlib import pyplot as plt
-    from linesegmentation.preprocessing.preprocessingUtil import resize_image
+    from linesegmentation.preprocessing.util import resize_image
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/test/line_test_image.jpg')

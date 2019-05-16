@@ -4,18 +4,21 @@ from PIL import Image
 import numpy as np
 from functools import partial
 from matplotlib import pyplot as plt
-from linesegmentation.detection.lineDetector import LineDetector, LineDetectionSettings, create_data, ImageData,\
+from linesegmentation.detection.detector import LineDetector, LineDetectionSettings, create_data, ImageData,\
     LineSimplificationAlgorithm, polyline_simplification
-from linesegmentation.detection.lineDetectionUtil import get_text_borders, vertical_runs, calculate_horizontal_runs
+from linesegmentation.detection.util import get_text_borders, vertical_runs, calculate_horizontal_runs
 from pagesegmentation.lib.predictor import PredictSettings
 from linesegmentation.pixelclassifier.predictor import PCPredictor
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
-from linesegmentation.preprocessing.preprocessingUtil import extract_connected_components, \
+from linesegmentation.preprocessing.util import extract_connected_components, \
     normalize_connected_components
 from typing import List, Generator
 
 
 class LineDetectionRest(LineDetector):
+    '''
+    Line detection for images with virtual staff lines
+    '''
     def __init__(self, settings, text_model=None):
         super().__init__(settings)
         self.text_predictor = None
@@ -26,7 +29,7 @@ class LineDetectionRest(LineDetector):
                 output=None,
                 high_res_output=False
             )
-            self.text_predictor = PCPredictor(pc_settings_text, settings.targetLineSpaceHeight)
+            self.text_predictor = PCPredictor(pc_settings_text, settings.target_line_space_height)
 
     def detect_paths(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
         def read_img(path):
@@ -34,10 +37,10 @@ class LineDetectionRest(LineDetector):
 
         return self.detect_advanced(list(map(read_img, image_paths)))
 
-    def detect_advanced(self, image_paths: List[str]):
+    def detect_advanced(self, images: List[np.ndarray]):
         create_data_partial = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
-            data = [v for v in tqdm.tqdm(p.imap(create_data_partial, image_paths), total=len(image_paths))]
+            data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         if self.text_predictor:
             for i, pred in enumerate(zip(self.predictor.predict(data), self.text_predictor.predict(data))):
                 line_prediction = pred[0]
@@ -86,7 +89,7 @@ class LineDetectionRest(LineDetector):
                         height = center_ys
                 staffindices.append(system)
             prev_text_height = th
-        staffindices = [staff for staff in staffindices if len(staff) >= self.settings.minLineNum]
+        staffindices = [staff for staff in staffindices if len(staff) >= self.settings.min_lines_per_system]
         staff_list = []
         for z in staffindices:
             system = []
@@ -109,10 +112,10 @@ class LineDetectionRest(LineDetector):
 
         line_list = self.prune_small_lines(line_list, staff_space_height)
 
-        if self.settings.numLine > 1:
+        if self.settings.line_number > 1:
             staff_list = self.organize_lines_in_systems(line_list, staff_space_height, staff_line_height, text_height)
             staff_list = self.prune_lines_in_system_with_lowest_intensity(staff_list, img)
-            if self.settings.lineExtension:
+            if self.settings.line_interpolation:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
 
         else:
@@ -149,8 +152,8 @@ if __name__ == "__main__":
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-427.nrm.png')
     model_line = os.path.join(project_dir, 'demo/models/line/virtual_lines/model')
     model_region = os.path.join(project_dir, 'demo/models/region/model')
-    settings_prediction = LineDetectionSettings(debug=True, minLineNum=1, numLine=4, lineSpaceHeight=20
-                                                , targetLineSpaceHeight=10, smooth_lines=2, line_fit_distance=1.0,
+    settings_prediction = LineDetectionSettings(debug=True, min_lines_per_system=3, line_number=4, line_space_height=20,
+                                                target_line_space_height=10, smooth_lines=2, line_fit_distance=1.0,
                                                 model=model_line)
     line_detector = LineDetectionRest(settings_prediction, model_region)
 

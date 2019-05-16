@@ -7,85 +7,16 @@ import math
 from pagesegmentation.lib.predictor import PredictSettings
 from scipy.interpolate import interpolate
 from linesegmentation.pixelclassifier.predictor import PCPredictor
-from linesegmentation.detection.lineDetectionUtil import vertical_runs, best_line_fit, get_blackness_of_line, scale_line, simplify_anchor_points
+from linesegmentation.detection.util import vertical_runs, best_line_fit, get_blackness_of_line,\
+    scale_line, simplify_anchor_points
 from linesegmentation.datatypes.datatypes import ImageData
 from linesegmentation.util.image_util import smooth_array
 from collections import defaultdict
 from matplotlib import pyplot as plt
-from linesegmentation.preprocessing.binarization.basic_binarize import gauss_threshold
-from linesegmentation.preprocessing.preprocessingUtil import resize_image
-from enum import IntEnum
+from linesegmentation.preprocessing.binarization.basic_binarizer import gauss_threshold
+from linesegmentation.preprocessing.util import resize_image
 from linesegmentation.preprocessing.polysimplify import VWSimplifier
-
-
-class PostProcess(IntEnum):
-    BESTFIT = 1
-    FLAT = 2
-
-
-class SmoothLines(IntEnum):
-    OFF = 0
-    BASIC = 1
-    ADVANCE = 2
-
-
-class LineSimplificationAlgorithm(IntEnum):
-    RAMER_DOUGLER_PEUCKLER = 1
-    VISVALINGAM_WHYATT = 2
-
-
-class LineDetectionSettings(NamedTuple):
-
-    numLine: int = 4
-    minLineNum: int = 3
-    minLength: int = 6
-    lineExtension: bool = True
-    debug: bool = False
-    lineSpaceHeight: int = 20
-    targetLineSpaceHeight: int = 10
-
-    smooth_lines: SmoothLines = SmoothLines.OFF
-    smooth_value_low_pass: float = 5
-    smooth_value_adv: int = 25
-    smooth_lines_adv_debug: bool = False
-    line_fit_distance: float = 0.5
-    model: Optional[str] = None
-    model_foreground_threshold: float = 0.5
-
-    system_threshold: float = 1.0
-    debug_model: bool = False
-    processes: int = 12
-    post_process: PostProcess = PostProcess.BESTFIT
-    best_fit_scale: float = 2.0
-    max_line_points: int = 30
-
-
-def approximate_blackness_of_line(line: List[List[int]], image: np.ndarray):
-    image = image
-    y_list, x_list = zip(*line)
-    func = interpolate.interp1d(x_list, y_list)
-    x_start, x_end = x_list[0], x_list[-1]
-    spaced_numbers = np.linspace(x_start, x_end, num=int(abs(x_list[0] - x_list[-1]) * 1 / 5), endpoint=True)
-    y_new = func(spaced_numbers)
-    blackness = 0
-    for ind, number in enumerate(y_new):
-        if image[int(number)][int(spaced_numbers[ind])] == 255:
-            blackness += 1
-    return blackness
-
-
-def create_data(image: np.ndarray, line_space_height: int):
-    space_height = line_space_height
-    norm_img = image.astype(np.float32) / 255
-    staff_space_height = None
-    staff_line_height = None
-    binary_image = gauss_threshold(image) / 255
-    if line_space_height == 0:
-        staff_space_height, staff_line_height = vertical_runs(binary_image)
-        space_height = staff_space_height + staff_line_height
-    image_data = ImageData(height=space_height, image=norm_img, staff_line_height=staff_line_height,
-                           staff_space_height=staff_space_height, binary_image=binary_image)
-    return image_data
+from linesegmentation.detection.settings import LineDetectionSettings, LineSimplificationAlgorithm
 
 
 class LineDetector:
@@ -106,7 +37,7 @@ class LineDetector:
                 output=None,
                 high_res_output=False
             )
-            self.predictor = PCPredictor(pcsettings, settings.targetLineSpaceHeight)
+            self.predictor = PCPredictor(pcsettings, settings.target_line_space_height)
 
     @staticmethod
     def connect_connected_components_to_line(cc_list: List[List[List[int]]], staff_line_height: int,
@@ -212,7 +143,7 @@ class LineDetector:
                     system.append(z)
                     height = center_ys
             staff_indices.append(system)
-        staffindices = [staff for staff in staff_indices if len(staff) >= self.settings.minLineNum]
+        staffindices = [staff for staff in staff_indices if len(staff) >= self.settings.min_lines_per_system]
         staff_list = []
         for z in staffindices:
             system = []
@@ -227,7 +158,7 @@ class LineDetector:
         while prune:
             prune = False
             for staff_ind, staff in enumerate(staff_list):
-                if len(staff) > self.settings.numLine:
+                if len(staff) > self.settings.line_number:
                     intensity_of_staff = {}
                     for line_ind, line in enumerate(staff):
 
@@ -239,7 +170,7 @@ class LineDetector:
                             del staff_list[staff_ind][min_blackness[0]]
                             del intensity_of_staff[min_blackness[0]]
                             continue
-                        if len(staff) >= self.settings.numLine * 2 + 1 and self.settings.numLine != 0:
+                        if len(staff) >= self.settings.line_number * 2 + 1 and self.settings.line_number != 0:
                             if len(staff[:min_blackness[0]]) > 2:
                                 staff_list.append(staff[:min_blackness[0]])
                             if len(staff[min_blackness[0]:]) > 2:
@@ -581,6 +512,34 @@ def ramerdouglas(line: List[List[int]], dist: float):
     pos = dist_sq.index(maxdist)
     return (ramerdouglas(line[:pos + 2], dist) +
             ramerdouglas(line[pos + 1:], dist)[1:])
+
+
+def approximate_blackness_of_line(line: List[List[int]], image: np.ndarray):
+    image = image
+    y_list, x_list = zip(*line)
+    func = interpolate.interp1d(x_list, y_list)
+    x_start, x_end = x_list[0], x_list[-1]
+    spaced_numbers = np.linspace(x_start, x_end, num=int(abs(x_list[0] - x_list[-1]) * 1 / 5), endpoint=True)
+    y_new = func(spaced_numbers)
+    blackness = 0
+    for ind, number in enumerate(y_new):
+        if image[int(number)][int(spaced_numbers[ind])] == 255:
+            blackness += 1
+    return blackness
+
+
+def create_data(image: np.ndarray, line_space_height: int):
+    space_height = line_space_height
+    norm_img = image.astype(np.float32) / 255
+    staff_space_height = None
+    staff_line_height = None
+    binary_image = gauss_threshold(image) / 255
+    if line_space_height == 0:
+        staff_space_height, staff_line_height = vertical_runs(binary_image)
+        space_height = staff_space_height + staff_line_height
+    image_data = ImageData(height=space_height, image=norm_img, staff_line_height=staff_line_height,
+                           staff_space_height=staff_space_height, binary_image=binary_image)
+    return image_data
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image, ImageStat
 import math
 
+
 def normalize_raw_image(raw):
     image = raw.astype(np.float32) - np.amin(raw)
     image /= np.amax(raw)
@@ -9,7 +10,7 @@ def normalize_raw_image(raw):
 
 
 def smooth_array(values, smoothing):
-    value = values[0] # start with the first input
+    value = values[0]  # start with the first input
     for i in range(len(values)):
         current_value = values[i]
         value += (current_value - value) / smoothing
@@ -20,30 +21,31 @@ def smooth_array(values, smoothing):
 def detect_color_image(file, thumb_size=40, MSE_cutoff=22, adjust_color_bias=True):
     pil_img = Image.open(file)
     bands = pil_img.getbands()
-    if bands == ('R','G','B') or bands== ('R','G','B','A'):
-        thumb = pil_img.resize((thumb_size,thumb_size))
-        SSE, bias = 0, [0,0,0]
+    if bands == ('R', 'G', 'B') or bands == ('R', 'G', 'B', 'A'):
+        thumb = pil_img.resize((thumb_size, thumb_size))
+        SSE, bias = 0, [0, 0, 0]
         if adjust_color_bias:
             bias = ImageStat.Stat(thumb).mean[:3]
-            bias = [b - sum(bias)/3 for b in bias ]
+            bias = [b - sum(bias)/3 for b in bias]
         for pixel in thumb.getdata():
             mu = sum(pixel)/3
-            SSE += sum((pixel[i] - mu - bias[i])*(pixel[i] - mu - bias[i]) for i in [0,1,2])
+            SSE += sum((pixel[i] - mu - bias[i])*(pixel[i] - mu - bias[i]) for i in [0, 1, 2])
         MSE = float(SSE)/(thumb_size*thumb_size)
         if MSE <= MSE_cutoff:
             return "grayscale"            
         else:
             return "color"            
-        print("( MSE=",MSE,")")
+        print("( MSE=", MSE, ")")
     elif len(bands)==1:
         return "binary"
     else:
-       return "other"
+        return "other"
+
 
 if __name__ == "__main__":
     import os
-    from linesegmentation.detection.lineDetector import LineDetectionSettings
-    from linesegmentation.detection.lineDetection import LineDetection
+    from linesegmentation.detection.detector import LineDetectionSettings
+    from linesegmentation.detection.detection import LineDetection
     from PIL import Image
     from matplotlib import pyplot as plt
 

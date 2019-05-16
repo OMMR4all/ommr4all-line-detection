@@ -50,11 +50,11 @@ def staff_removal(staffs_lines: List[List[List[int]]], img: np.ndarray, line_hei
 
 if __name__ == "__main__":
     import os
-    from linesegmentation.detection.lineDetector import LineDetectionSettings
-    from linesegmentation.detection.lineDetection import LineDetection
+    from linesegmentation.detection.detector import LineDetectionSettings
+    from linesegmentation.detection.detection import LineDetection
     from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
     from PIL import Image
-    from linesegmentation.detection.lineDetection import vertical_runs, calculate_horizontal_runs
+    from linesegmentation.detection.detection import vertical_runs, calculate_horizontal_runs
     from matplotlib import pyplot as plt
 
     setting_predictor = LineDetectionSettings(debug=False)

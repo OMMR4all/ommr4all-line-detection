@@ -8,7 +8,7 @@ setup(
     long_description=open("README.md").read(),
     include_package_data=True,
     author="Alexander Hartelt, Christoph Wick",
-    author_email="christoph.wick@informatik.uni-wuerzburg.de",
+    author_email="alexander.hartelt@informatik.uni-wuerzburg.de, christoph.wick@informatik.uni-wuerzburg.de",
     url="https://gitlab2.informatik.uni-wuerzburg.de/OMMR4all/line-segmentation.git",
     download_url='https://gitlab2.informatik.uni-wuerzburg.de/OMMR4all/line-segmentation.git',
     entry_points={
