@@ -28,9 +28,6 @@ class LineDetection(LineDetector):
     ----------
     settings : LineDetectionSettings
         Setting for the line detection algorithm
-    predictor : PCPredictor, optional
-        Necessary if the NN should be used for the binarisation
-
     """
 
     def __init__(self, settings: LineDetectionSettings, callback: LineDetectionCallback = None):

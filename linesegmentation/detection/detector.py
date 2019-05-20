@@ -1,6 +1,6 @@
 # misc imports
 import os
-from typing import List, Optional, NamedTuple
+from typing import List, Optional, NamedTuple, Tuple
 import numpy as np
 import math
 # project specific imports
@@ -27,7 +27,15 @@ class LineDetector:
         ----------
         settings: LineDetectionSettings
             Settings for the line detection algorithm
+
+        Attributes
+        ----------
+        settings: LineDetectionSettings
+            Settings for the line detection algorithm
+        predictor : PCPredictor, optional
+             Necessary if the NN should be used for the binarisation
         """
+
         self.settings = settings
         self.predictor = None
         if settings.model:
@@ -152,7 +160,7 @@ class LineDetector:
             staff_list.append(system)
         return staff_list
 
-    def prune_lines_in_system_with_lowest_intensity(self, staff_list: List[List[List[int]]], img: np.ndarray):
+    def prune_lines_in_system_with_lowest_intensity(self, staff_list: List[List[List[List[int]]]], img: np.ndarray):
         # Remove the lines with the lowest blackness value in each system, so that len(staffs) <= numLine
         prune = True
         while prune:
@@ -165,7 +173,7 @@ class LineDetector:
                         intensity_of_staff[line_ind] = approximate_blackness_of_line(line, img)
                     if intensity_of_staff:
                         prune = True
-                        min_blackness = min(intensity_of_staff.items(), key=lambda t: t[1])
+                        min_blackness = np.min(intensity_of_staff.items(), key=lambda t: t[1])
                         if min_blackness[0] == 0 or min_blackness[0] == len(intensity_of_staff):
                             del staff_list[staff_ind][min_blackness[0]]
                             del intensity_of_staff[min_blackness[0]]
@@ -182,7 +190,7 @@ class LineDetector:
         return staff_list
 
     @staticmethod
-    def normalize_lines_in_system(staff_list: List[List[List[int]]], staff_space_height: int, img: np.ndarray):
+    def normalize_lines_in_system(staff_list: List[List[List[List[int]]]], staff_space_height: int, img: np.ndarray):
 
         for z_ind, z in enumerate(staff_list):
             sxs = [line[0][1] for line in z]
@@ -199,35 +207,42 @@ class LineDetector:
 
             for line_ind, line in enumerate(z):
                 y, x = zip(*line)
-                if line[0][1] > xmi[0] and abs(line[0][1] - xmi[0]) > 5:
-                    x_start, x_end = xmi[0], min(line[0][1], z[min_index_sxs][-1][1])
-                    spaced_numbers = np.linspace(x_start, x_end - 1, num=abs(x_end - x_start) * 1 / 5, endpoint=True)
-                    staffextension = []
-                    if line[0][1] > xmi[-1]:
-                        dif = minf(xma[-1]) - line[0][0]
+                point_start_x = line[0][1]
+                point_start_y = line[0][0]
+                point_end_x = line[-1][1]
+                point_end_y = line[-1][0]
+                if point_start_x > xmi[0] and abs(point_start_x - xmi[0]) > 5:
+                    x_start, x_end = xmi[0], min(point_start_x, z[min_index_sxs][-1][1])
+                    x_values = list(range(x_start, x_end))
+
+                    if point_start_x > xmi[-1]:
+                        dif = minf(xma[-1]) - point_start_y
                     else:
-                        dif = minf(line[0][1]) - line[0][0]
-                    for i in spaced_numbers:
-                        staffextension.append([int(minf(i) - dif), int(i)])
-                    if staffextension:
-                        staff_list[z_ind][line_ind] = staffextension + staff_list[z_ind][line_ind]
-                if line[-1][1] < exs[max_index_exs] and abs(line[-1][1] - exs[max_index_exs]) > 5:
-                    x_start, x_end = max(line[-1][1], z[max_index_exs][0][1]), exs[max_index_exs]
-                    spaced_numbers = np.linspace(x_start, x_end, num=abs(x_end - x_start) * 1 / 5, endpoint=True)
-                    staffextension = []
-                    if line[-1][1] < xma[0]:
-                        dif = maxf(xma[0]) - line[-1][0]
+                        dif = minf(point_start_x) - point_start_y
+                    interpolated_ys = np.floor(minf(x_values) + 0.5 - dif)
+                    interpolated_points = list(zip(interpolated_ys, x_values))
+
+                    if interpolated_points:
+                        staff_list[z_ind][line_ind] = interpolated_points + staff_list[z_ind][line_ind]
+
+                if point_end_x < exs[max_index_exs] and abs(point_end_x - exs[max_index_exs]) > 5:
+                    x_start, x_end = max(point_end_x, z[max_index_exs][0][1]), exs[max_index_exs]
+                    x_values = list(range(x_start, x_end))
+
+                    if point_end_x < xma[0]:
+                        dif = maxf(xma[0]) - point_end_y
                     else:
-                        dif = maxf(line[-1][1]) - line[-1][0]
-                    for i in spaced_numbers:
-                        staffextension.append([int(maxf(i) - dif), int(i)])
-                    if staffextension:
-                        staff_list[z_ind][line_ind] = staff_list[z_ind][line_ind] + staffextension
-                if line[0][1] < sxb and abs(line[0][1] - sxs[min_index_sxs]) > 5:
-                    while len(line) > 0 and line[0][1] <= sxb:
+                        dif = maxf(point_end_x) - point_end_y
+                    interpolated_ys = np.floor(maxf(x_values) + 0.5 - dif)
+                    interpolated_points = list(zip(interpolated_ys, x_values))
+
+                    if interpolated_points:
+                        staff_list[z_ind][line_ind] = staff_list[z_ind][line_ind] + interpolated_points
+                if point_start_x < sxb and abs(point_end_y - sxs[min_index_sxs]) > 5:
+                    while len(line) > 0 and point_end_y <= sxb:
                         del line[0]
                 if x[-1] > exb and abs(x[-1] - sxs[min_index_sxs]) > 5:
-                    while line[-1][1] >= exb:
+                    while point_end_x >= exb:
                         del line[-1]
 
         for staff_ind, staffs in enumerate(staff_list):
@@ -368,7 +383,7 @@ class LineDetector:
         return new_staff_lines
 
     @staticmethod
-    def best_fit_systems(system_list: List[List[List[int]]], gray_image: np.ndarray, binary_image: np.ndarray
+    def best_fit_systems(system_list: List[List[List[List[int]]]], gray_image: np.ndarray, binary_image: np.ndarray
                          , lt: int, scale: float = 2.0):
         image_cp = gray_image  # + binary_image
         scaled_image = resize_image(image_cp * 255, scale)
@@ -436,7 +451,7 @@ def interpolate_sequence(x_list: List[int], y_list: List[int]):
     return x_list_new, list((np.floor(y_list_new + 0.5).astype(int)))
 
 
-def polyline_simplification(staff_list: List[List[List[int]]],
+def polyline_simplification(staff_list: List[List[List[List[int]]]],
                             algorithm: LineSimplificationAlgorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
                             max_points_vw: int = 30, ramer_dougler_dist: float = 0.5):
     new_staff_list = []
@@ -469,7 +484,7 @@ def _vec2d_mult(p1: List[int], p2: List[int]):
     return p1[0]*p2[0] + p1[1]*p2[1]
 
 
-def check_systems(line_list: List[List[List[int]]], binary_image: np.ndarray, threshold: float = 0.7):
+def check_systems(line_list: List[List[List[List[int]]]], binary_image: np.ndarray, threshold: float = 0.7):
 
     new_line_list = []
     for system in line_list:
