@@ -9,7 +9,6 @@ class Point:
     y: float
 
 
-@dataclass
 class Line:
     def __init__(self, line: List[Point]):
         self.line: List[Point] = line
@@ -29,7 +28,6 @@ class Line:
         for point in self.line:
             x_list.append(point.x)
             y_list.append(point.y)
-        #return zip(*self.line)
         return x_list, y_list
 
     def __len__(self):
@@ -72,7 +70,6 @@ class Line:
         del self.line[key]
 
 
-@dataclass
 class System:
     def __init__(self, system: List[Line]):
         self.system: List[Line] = system

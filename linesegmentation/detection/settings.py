@@ -13,6 +13,11 @@ class SmoothLines(IntEnum):
     ADVANCE = 2
 
 
+class OutPutType(IntEnum):
+    LISTOFLISTS = 1
+    LISTOFOBJECT = 2
+
+
 class LineSimplificationAlgorithm(IntEnum):
     RAMER_DOUGLER_PEUCKLER = 1
     VISVALINGAM_WHYATT = 2
@@ -40,6 +45,8 @@ class LineDetectionSettings(NamedTuple):
     debug_model: bool = False
     processes: int = 12
     post_process: PostProcess = PostProcess.BESTFIT
-    post_process_debug: bool =  True
+    post_process_debug: bool = True
     best_fit_scale: float = 2.0
     max_line_points: int = 30
+
+    output_type: OutPutType = OutPutType.LISTOFLISTS

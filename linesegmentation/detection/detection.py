@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from scipy.ndimage.morphology import binary_erosion, binary_dilation
 
 from linesegmentation.detection.settings import LineDetectionSettings, \
-    LineSimplificationAlgorithm, PostProcess, SmoothLines
+    LineSimplificationAlgorithm, PostProcess, SmoothLines, OutPutType
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.util import extract_connected_components, \
@@ -213,7 +213,18 @@ class LineDetection(LineDetector):
 
             plt.show()
 
-        return staff_list
+        if self.settings.output_type == OutPutType.LISTOFLISTS:
+            staff_list_result = []
+            for system in staff_list:
+                new_system = []
+                for line in system:
+                    x, y = line.get_xy()
+                    new_line = zip(y, x)
+                    new_system.append(new_line)
+                staff_list_result.append(new_system)
+            return staff_list_result
+        else:
+            return staff_list
 
 
 if __name__ == "__main__":
