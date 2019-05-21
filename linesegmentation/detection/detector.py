@@ -288,7 +288,7 @@ class LineDetector:
                     break
         return system_list
 
-    def post_process_staff_systems(self, staffs_lines: List[List[List[int]]], line_height: int, image: np.ndarray):
+    def post_process_staff_systems(self, staffs_lines: List[System], line_height: int, image: np.ndarray):
         post_processed_staff_systems = []
         h = image.shape[0]
         l2 = math.ceil(line_height / 2)
@@ -296,7 +296,7 @@ class LineDetector:
         for system in staffs_lines:
             procssed_system = []
             for staff in system:
-                y, x = zip(*staff)
+                x, y = staff.get_xy()
                 x_new, y_new = interpolate_sequence(x, y)
                 dict_count = defaultdict(list)
                 for i_ind, i in enumerate(y_new):
@@ -331,9 +331,9 @@ class LineDetector:
                 processed_staff = []
                 for key in dict_count.keys():
                     if len(dict_count[key]) <= line_height:
-                        processed_staff.append([np.mean(dict_count[key]), key])
-                procssed_system.append(processed_staff)
-            post_processed_staff_systems.append(procssed_system)
+                        processed_staff.append(Point(y=np.mean(dict_count[key]), x=key))
+                procssed_system.append(Line(processed_staff))
+            post_processed_staff_systems.append(System(procssed_system))
 
         for system_ind, system in enumerate(post_processed_staff_systems):
             post_processed_staff_systems[system_ind] = [lin for lin in system if lin]
@@ -347,36 +347,35 @@ class LineDetector:
             colors = cmap(np.linspace(0, 1.0, len(staffs_lines)))
             for system, color in zip(staffs_lines, colors):
                 for staff in system:
-                    y, x = zip(*staff)
+                    x, y = staff.get_xy()
                     ax[0].plot(x, y, color=color)
             for system, color in zip(post_processed_staff_systems, colors):
                 for staff in system:
-                    y, x = zip(*staff)
+                    x, y = staff.get_xy()
                     ax[1].plot(x, y, color=color)
             plt.show()
         return post_processed_staff_systems
 
-    def smooth_lines(self, staff_lines: List[List[List[int]]]):
+    def smooth_lines(self, staff_lines: List[System]):
         new_staff_lines = []
         for system in staff_lines:
             new_system = []
             for line in system:
-                y, x = zip(*line)
+                x, y = line.get_xy()
                 y = smooth_array(list(y), self.settings.smooth_value_low_pass)
-                line = list(zip(y, x))
+
+                line = Line([Point(x, y) for x, y in zip(x, y)])
                 new_system.append(line)
-            new_staff_lines.append(new_system)
+            new_staff_lines.append(System(new_system))
 
         return new_staff_lines
 
-    def smooth_lines_advanced(self, staff_lines: List[List[List[int]]]):
+    def smooth_lines_advanced(self, staff_lines: List[System]):
         new_staff_lines = []
         for system in staff_lines:
             new_system = []
             for line in system:
-                y, x = zip(*line)
-                x = list(x)
-                y = list(y)
+                x, y = line.get_xy()
                 if len(x) < 2:
                     continue
 
@@ -385,9 +384,10 @@ class LineDetector:
                 append_end = [y[-1] for x in range(10)]
                 m_y = append_start + y + append_end
                 remove_hill(m_y, self.settings.smooth_value_adv)
-                line = list(zip(m_y[10:-10], x))
+                line = Line([Point(x, y) for x, y in zip(x, m_y[10:-10])])
+
                 new_system.append(line)
-            new_staff_lines.append(new_system)
+            new_staff_lines.append(System(new_system))
 
         if self.settings.smooth_lines_adv_debug:
             f, ax = plt.subplots(1, 2, True, True)
@@ -395,11 +395,11 @@ class LineDetector:
             colors = cmap(np.linspace(0, 1.0, len(new_staff_lines)))
             for system, color in zip(staff_lines, colors):
                 for staff in system:
-                    y, x = zip(*staff)
+                    x, y = staff.get_xy()
                     ax[0].plot(x, y, color=color)
             for system, color in zip(new_staff_lines, colors):
                 for staff in system:
-                    y, x = zip(*staff)
+                    x, y = staff.get_xy()
                     ax[1].plot(x, y, color=color)
             plt.show()
         return new_staff_lines

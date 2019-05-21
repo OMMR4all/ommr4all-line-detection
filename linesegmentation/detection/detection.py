@@ -162,19 +162,14 @@ class LineDetection(LineDetector):
         else:
             staff_list = [[System(x)] for x in line_list]
 
-        if self.settings.debug:
-            staff_list_debug = polyline_simplification(staff_list,
-                                                       algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
-                                                       ramer_dougler_dist=0.5)
         self.callback.update_current_page_state()
 
         if self.settings.post_process == PostProcess.FLAT:
             staff_list = self.post_process_staff_systems(staff_list, staff_line_height, binary_image)
-            if self.settings.numLine > 1 and self.settings.lineExtension:
+            if self.settings.line_number > 1 and self.settings.line_interpolation:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
             self.callback.update_current_page_state()
-
-            if self.settings.smooth_lines == SmoothLines.OFF:
+            if self.settings.smooth_lines != SmoothLines.OFF:
                 if self.settings.smooth_lines == SmoothLines.BASIC:
                     staff_list = self.smooth_lines(staff_list)
                 if self.settings.smooth_lines == SmoothLines.ADVANCE:
@@ -204,26 +199,18 @@ class LineDetection(LineDetector):
         self.callback.update_current_page_state()
         # Debug
         if self.settings.debug:
-            f, ax = plt.subplots(1, 2, True, True)
-            extent_b = (0, binary_image.shape[1], binary_image.shape[0], 0)
+            extent_b = (0, image_data.image.shape[1], image_data.image.shape[0], 0)
 
-            ax[0].imshow(binary_image, cmap='gray', extent=extent_b)
+            plt.imshow(image_data.image, cmap='gray', extent=extent_b)
             cmap = plt.get_cmap('jet')
-            colors = cmap(np.linspace(0, 1.0, len(staff_list_debug)))
+            colors = cmap(np.linspace(0, 1.0, len(staff_list)))
 
-            for system, color in zip(staff_list_debug, colors):
-                for staff in system:
-                    x, y = staff.get_xy()
-                    ax[0].plot(x, y, color=color)
-                    ax[0].plot(x, y, "bo")
-
-            extent_g = (0, image_data.image.shape[1], image_data.image.shape[0], 0)
-            ax[1].imshow(image_data.image, cmap='gray', extent=extent_g)
             for system, color in zip(staff_list, colors):
                 for staff in system:
                     x, y = staff.get_xy()
-                    ax[1].plot(x, y, color=color)
-                    ax[1].plot(x, y, "bo")
+                    plt.plot(x, y, color=color)
+                    plt.plot(x, y, "bo")
+
             plt.show()
 
         return staff_list
@@ -233,7 +220,7 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
-    setting_predictor = LineDetectionSettings(debug=True, model=model_line)
+    setting_predictor = LineDetectionSettings(debug=True, model=model_line, post_process=2, smooth_lines=2)
     t_callback = DummyLineDetectionCallback(total_steps=7, total_pages=1)
     line_detector = LineDetection(setting_predictor, t_callback)
 
