@@ -13,6 +13,7 @@ from linesegmentation.preprocessing.binarization.ocropus_binarizer import binari
 from linesegmentation.preprocessing.util import extract_connected_components, \
     normalize_connected_components
 from typing import List, Generator
+from linesegmentation.detection.datatypes import Line, System, Point
 
 
 class LineDetectionRest(LineDetector):
@@ -38,7 +39,7 @@ class LineDetectionRest(LineDetector):
         return self.detect_advanced(list(map(read_img, image_paths)))
 
     def detect_advanced(self, images: List[np.ndarray]):
-        create_data_partial = partial(create_data, line_space_height=self.settings.lineSpaceHeight)
+        create_data_partial = partial(create_data, line_space_height=self.settings.line_space_height)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         if self.text_predictor:
@@ -57,32 +58,32 @@ class LineDetectionRest(LineDetector):
                     plt.show()
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - line_prediction_pruned)
                 data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (line_prediction_pruned / 255)),
-                                                                        self.settings.minLength)
+                                                                        self.settings.horizontal_min_length)
                 yield self.detect_staff_lines_rest(data[i], get_text_borders(t_region - region_prediction))
         else:
             for i, pred in enumerate(self.predictor.predict(data)):
                 pred[pred > 0] = 255
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - pred)
                 data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)),
-                                                                        self.settings.minLength)
+                                                                        self.settings.horizontal_min_length)
                 data[i].image = np.array(Image.open(data[i].path)) / 255
                 binary = np.array(binarize(data[i].image), dtype='uint8')
                 text_borders = get_text_borders((1 - binary)*255, preprocess=True)
                 yield self.detect_staff_lines_rest(data[i], text_borders)
 
-    def organize_lines_in_systems(self, line_list: List[List[List[int]]], staff_space_height: int,
+    def organize_lines_in_systems(self, line_list: List[System], staff_space_height: int,
                                   staff_line_height: int, text_height: int):
-        medium_staff_height = [np.mean([y_c for y_c, x_c in staff]) for staff in line_list]
+        mean_line_height_list = [line.get_average_line_height() for line in line_list]
         staffindices = []
         prev_text_height = 0
         for th in text_height:
-            m_staff_height_between_interval = [x for x in medium_staff_height if prev_text_height <= x <= th]
-            for i, medium_y in enumerate(medium_staff_height):
+            m_staff_height_between_interval = [x for x in mean_line_height_list if prev_text_height <= x <= th]
+            for i, medium_y in enumerate(mean_line_height_list):
                 system = []
                 if i in sum(staffindices, []) or medium_y not in m_staff_height_between_interval:
                     continue
                 height = medium_y
-                for z, center_ys in enumerate(medium_staff_height):
+                for z, center_ys in enumerate(mean_line_height_list):
                     if np.abs(height - center_ys) < 2.1 * (
                             staff_space_height + staff_line_height) and center_ys in m_staff_height_between_interval:
                         system.append(z)
@@ -92,10 +93,10 @@ class LineDetectionRest(LineDetector):
         staffindices = [staff for staff in staffindices if len(staff) >= self.settings.min_lines_per_system]
         staff_list = []
         for z in staffindices:
-            system = []
+            system_list = []
             for x in z:
                 system.append(line_list[x])
-            staff_list.append(system)
+            staff_list.append(System(system_list))
         return staff_list
 
     def detect_staff_lines_rest(self, image_data: ImageData, text_height: int):
@@ -123,9 +124,9 @@ class LineDetectionRest(LineDetector):
 
         if self.settings.smooth_lines != 0:
             if self.settings.smooth_lines == 1:
-                staff_list = self.smooth_lines(staff_list, self.settings.smooth_value_lowpass)
+                staff_list = self.smooth_lines(staff_list)
             if self.settings.smooth_lines == 2:
-                staff_list = self.smooth_lines_advanced(staff_list, self.settings.smooth_value_adv)
+                staff_list = self.smooth_lines_advanced(staff_list)
 
         staff_list = polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
                                              ramer_dougler_dist=self.settings.line_fit_distance)
@@ -138,7 +139,7 @@ class LineDetectionRest(LineDetector):
             colors = cmap(np.linspace(0, 1.0, len(staff_list)))
             for system, color in zip(staff_list, colors):
                 for staff in system:
-                    y, x = zip(*staff)
+                    x, y = staff.get_xy()
                     ax[0].plot(x, y, color=color)
             ax[1].imshow(img, cmap='gray')
             plt.show()
