@@ -6,6 +6,7 @@ from PIL import Image
 from skimage.transform import rescale
 from typing import List
 
+
 def extract_connected_components(image: np.ndarray):
     connectivity = 8
     output = cv2.connectedComponentsWithStats(image, connectivity)

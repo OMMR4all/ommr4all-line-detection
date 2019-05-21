@@ -3,6 +3,8 @@ import multiprocessing
 import tqdm
 from functools import partial
 from typing import List, Generator
+from linesegmentation.detection.detector import LineDetector, ImageData, create_data, \
+    check_systems, polyline_simplification
 from linesegmentation.detection.util import vertical_runs, calculate_horizontal_runs
 import numpy as np
 # image specific imports
@@ -10,8 +12,7 @@ from PIL import Image
 from matplotlib import pyplot as plt
 # project specific imports
 from scipy.ndimage.morphology import binary_erosion, binary_dilation
-from linesegmentation.detection.detector import LineDetector, ImageData, create_data, \
-    check_systems, polyline_simplification
+
 from linesegmentation.detection.settings import LineDetectionSettings, \
     LineSimplificationAlgorithm, PostProcess, SmoothLines
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
@@ -19,6 +20,7 @@ from linesegmentation.preprocessing.enhancing.enhancer import enhance
 from linesegmentation.preprocessing.util import extract_connected_components, \
     normalize_connected_components
 from linesegmentation.detection.callback import LineDetectionCallback, DummyLineDetectionCallback
+from linesegmentation.detection.detector import System, Line, Point
 
 
 class LineDetection(LineDetector):
@@ -136,32 +138,30 @@ class LineDetection(LineDetector):
 
     def detect_staff_lines(self, image_data: ImageData):
         img = image_data.horizontal_runs_img
+
         binary_image = image_data.binary_image
         staff_line_height = image_data.staff_line_height
         staff_space_height = image_data.staff_space_height
 
-        cc_list = extract_connected_components(img)
-
-        cc_list = normalize_connected_components(cc_list)
+        cc_list = self.extract_ccs(img)
 
         line_list = self.connect_connected_components_to_line(cc_list, staff_line_height, staff_space_height)
-        self.callback.update_current_page_state()
 
+        self.callback.update_current_page_state()
         # Remove lines which are shorter than 50px
-        line_list = [l for l in line_list if l[-1][1] - l[0][1] > 50]
+        line_list = [l for l in line_list if l.get_end_point().x - l.get_start_point().x > 50]
 
         line_list = self.prune_small_lines(line_list, staff_space_height)
-
         if self.settings.line_number > 1:
             staff_list = self.organize_lines_in_systems(line_list, staff_space_height, staff_line_height)
 
             staff_list = self.prune_lines_in_system_with_lowest_intensity(staff_list, img)
-
             if self.settings.line_interpolation:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
 
         else:
-            staff_list = [[x] for x in line_list]
+            staff_list = [[System(x)] for x in line_list]
+
         if self.settings.debug:
             staff_list_debug = polyline_simplification(staff_list,
                                                        algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
@@ -190,7 +190,6 @@ class LineDetection(LineDetector):
 
             staff_list = polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
                                                  max_points_vw=self.settings.max_line_points)
-
             self.callback.update_current_page_state()
 
             staff_list = self.best_fit_systems(staff_list, image_data.image, image_data.binary_image, staff_line_height,
@@ -214,7 +213,7 @@ class LineDetection(LineDetector):
 
             for system, color in zip(staff_list_debug, colors):
                 for staff in system:
-                    y, x = zip(*staff)
+                    x, y = staff.get_xy()
                     ax[0].plot(x, y, color=color)
                     ax[0].plot(x, y, "bo")
 
@@ -222,7 +221,7 @@ class LineDetection(LineDetector):
             ax[1].imshow(image_data.image, cmap='gray', extent=extent_g)
             for system, color in zip(staff_list, colors):
                 for staff in system:
-                    y, x = zip(*staff)
+                    x, y = staff.get_xy()
                     ax[1].plot(x, y, color=color)
                     ax[1].plot(x, y, "bo")
             plt.show()
@@ -234,7 +233,7 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
-    setting_predictor = LineDetectionSettings(debug=True, model=model_line, post_process=1)
+    setting_predictor = LineDetectionSettings(debug=True, model=model_line)
     t_callback = DummyLineDetectionCallback(total_steps=7, total_pages=1)
     line_detector = LineDetection(setting_predictor, t_callback)
 

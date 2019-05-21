@@ -5,6 +5,7 @@ from itertools import tee
 from scipy.interpolate import interpolate
 from numpy.linalg import norm
 from typing import List
+from linesegmentation.detection.datatypes import Line, Point, System
 
 
 def get_text_borders(image: np.ndarray, preprocess: bool = False, min_dist: int = 30, thres: float = 0.3):
@@ -60,43 +61,42 @@ def vertical_runs(img: np.array):
     return white_r, black_r
 
 
-def angle_difference_of_points(x1: int, y1: int, x2: int, y2: int):
-    v1 = np.array([x1, y1])
-    v2 = np.array([x2, y2])
+def angle_difference_of_points(p1: Point, p2: Point):
+    v1 = np.array([p1.x, p1.y])
+    v2 = np.array([p2.x, p2.y])
 
     angle_difference = np.arccos((v1 @ v2) / (norm(v1) * norm(v2)))
 
     return angle_difference
 
 
-def simplify_anchor_points(line: List[List[int]], max_distance: int = 25, min_distance: int = 10,
+def simplify_anchor_points(line: Line, max_distance: int = 25, min_distance: int = 10,
                            min_degree_to_keep_points: float = 0.2):
     new_line = []
 
-    def distance(p1, p2):
-        return p2[1] - p1[1]
-    prev_point = None
+    def distance(p1: Point, p2: Point):
+        return p2.x - p1.x
+    prev_point: Point = None
     for point_ind, point in enumerate(line):
         if prev_point is not None:
             point_distance = distance(prev_point, point)
         else:
             point_distance = min_distance + 1
         if point_distance > max_distance:
-            new_line.append([point[0], prev_point[1] + (point[1] - prev_point[1])/2])
+            new_line.append(Point(prev_point.x + (point.x - prev_point.x) / 2, point.y)) # [point[0], prev_point[1] + (point[1] - prev_point[1])/2])
         if point_distance < min_distance:
-            if angle_difference_of_points(prev_point[1], prev_point[0], point[1],
-                                          point[0]) > min_degree_to_keep_points or point_ind == len(line) - 1:
+            if angle_difference_of_points(prev_point, point) > min_degree_to_keep_points or point_ind == len(line) - 1:
                 new_line.append(point)
         else:
             new_line.append(point)
         prev_point = point
-    return new_line
+    return Line(new_line)
 
 
-def best_line_fit(img: np.array, line: List[List[int]], line_thickness: int = 3, max_iterations: int = 30,
+def best_line_fit(img: np.array, line: Line, line_thickness: int = 3, max_iterations: int = 30,
                   scale: float = 1.0, skip_startend_points: bool = False):
     current_blackness = get_blackness_of_line(line, img)
-    best_line = line.copy()
+    best_line = line.__copy__()
     change = True
     iterations = 0
     while change:
@@ -107,37 +107,39 @@ def best_line_fit(img: np.array, line: List[List[int]], line_thickness: int = 3,
             if skip_startend_points:
                 if point_ind == 0 or point_ind == len(best_line):
                     continue
-            y, x = point[0], point[1]
+            y, x = point.y, point.x
             for i in range(1, line_thickness * np.ceil(scale).astype(int)):
-                test_line = best_line.copy()
-                test_line[point_ind] = [y + i, x]
+                test_line = best_line.__copy__()
+                test_line[point_ind] = Point(x, y + i)#[y + i, x]
                 blackness = get_blackness_of_line(test_line, img)
 
                 if blackness < current_blackness:
                     change = True
                     current_blackness = blackness
-                    best_line[point_ind] = [y + i, x]
+                    best_line[point_ind] = Point(x, y + i)# [y + i, x]
 
-                test_line[point_ind] = [y - i, x]
+                test_line[point_ind] = Point(x, y - i) # [y - i, x]
                 blackness = get_blackness_of_line(test_line, img)
 
                 if blackness < current_blackness:
                     change = True
                     current_blackness = blackness
-                    best_line[point_ind] = [y - i, x]
+                    best_line[point_ind] = Point(x, y - i)
 
         iterations += 1
     return best_line
 
 
-def get_blackness_of_line(line: List[List[int]], image: np.ndarray):
-    y_list, x_list = zip(*line)
+def get_blackness_of_line(line: Line, image: np.ndarray):
+    x_list, y_list = line.get_xy()
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = int(x_list[0]), int(x_list[-1])
     x_list_new = np.arange(x_start, x_end)
     y_new = func(x_list_new)
     y_new_int = np.floor(y_new + 0.5).astype(int)
     indexes = (np.array(y_new_int), np.array(x_list_new))
+    #print(image.shape)
+    #print(indexes)
     blackness = np.mean(image[indexes])
     return blackness
 
@@ -182,8 +184,8 @@ def calculate_horizontal_runs(img: np.array, min_length: int):
     return np_matrix
 
 
-def scale_line(line: List[List[int]], factor: float):
-    return [[point[0] * factor, point[1] * factor] for point in line]
+#def scale_line(line: Line, factor: float):
+#    return [[point[0] * factor, point[1] * factor] for point in line]
 
 
 if __name__ == "__main__":
