@@ -42,7 +42,7 @@ class LineDetection(LineDetector):
         """
         super().__init__(settings)
         if callback is None:
-            self.callback: LineDetectionCallback = LineDetectionCallback()
+            self.callback: LineDetectionCallback = DummyLineDetectionCallback()
         else:
             self.callback: LineDetectionCallback = callback
 
@@ -91,7 +91,7 @@ class LineDetection(LineDetector):
     def detect_morphological(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
 
         for img in images:
-            self.callback.page_state = 0
+            self.callback.reset_page_state()
 
             image_data = ImageData()
             image_data.image = img.astype(float) / 255
