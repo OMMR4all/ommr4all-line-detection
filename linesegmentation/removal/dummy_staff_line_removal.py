@@ -2,6 +2,7 @@ import numpy as np
 from scipy.interpolate import interpolate
 import math
 from typing import List
+from linesegmentation.detection.datatypes import System, Line, Point
 
 
 def staff_removal(staffs_lines: List[List[List[int]]], img: np.ndarray, line_height: int):
@@ -14,7 +15,7 @@ def staff_removal(staffs_lines: List[List[List[int]]], img: np.ndarray, line_hei
             y, x = zip(*staff)
             f = interpolate.interp1d(x, y)
             x_start, x_end = min(x), max(x)
-            for i in range(x_start, x_end):
+            for i in range(int(x_start), int(x_end)):
                 count = []
 
                 st_point = int(f(i))
@@ -62,15 +63,11 @@ if __name__ == "__main__":
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
     for _pred in line_detector.detect_paths([page_path]):
-        img = np.array(Image.open(page_path)) / 255
-        binary_img = binarize(img)
+        _img = np.array(Image.open(page_path)) / 255
+        binary_img = binarize(_img)
         space_height_test, line_height_test = vertical_runs(binary_img)
         img_staffs_removed = staff_removal(_pred, binary_img, line_height_test)
         i, ax = plt.subplots(1, 2, True, True)
         ax[0].imshow(binary_img)
         ax[1].imshow(img_staffs_removed)
-        for s in _pred:
-            for l in s:
-                y, x = zip(*l)
-                ax[1].plot(x,y)
         plt.show()

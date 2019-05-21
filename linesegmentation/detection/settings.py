@@ -47,6 +47,6 @@ class LineDetectionSettings(NamedTuple):
     post_process: PostProcess = PostProcess.BESTFIT
     post_process_debug: bool = True
     best_fit_scale: float = 2.0
-    max_line_points: int = 30
+    max_line_points: int = 50
 
     output_type: OutPutType = OutPutType.LISTOFLISTS
