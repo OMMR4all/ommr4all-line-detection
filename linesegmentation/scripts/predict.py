@@ -59,12 +59,12 @@ def main():
     print("Loading {} files with character height {}".format(len(gray_file_paths), args.space_height))
 
     settings = LineDetectionSettings(
-        numLine=args.num_line,
-        minLength=args.min_hrun_lengths,
-        lineExtension=args.interpolate,
+        line_number=args.num_line,
+        horizontal_min_length=args.min_hrun_lengths,
+        line_interpolation=args.interpolate,
         debug=args.debug,
-        lineSpaceHeight=args.space_height,
-        targetLineSpaceHeight=args.target_line_height,
+        line_space_height=args.space_height,
+        target_line_space_height=args.target_line_height,
         model=args.load,
         post_process=args.post_process,
         smooth_lines=args.smooth_lines,
@@ -73,7 +73,6 @@ def main():
         smooth_value_adv=args.smooth_value_adv
 
     )
-
     lineDetector = LineDetection(settings)
     for i_ind, i in tqdm.tqdm(enumerate(lineDetector.detect_paths(gray_file_paths)),total = len(gray_file_paths)):
         pass
