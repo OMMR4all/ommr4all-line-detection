@@ -133,7 +133,7 @@ class LineDetector:
                         del line_list_copy[line_ind - 1]
                         del mean_line_height_list[line_ind - 1]
                         break
-                    if p2e.x <= p1e.x and p2a.x >= p1a.x1:
+                    if p2e.x <= p1e.x and p2a.x >= p1a.x:
                         del line_list_copy[line_ind]
                         del mean_line_height_list[line_ind]
                         break

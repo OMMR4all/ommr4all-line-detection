@@ -112,7 +112,7 @@ class LineDetection(LineDetector):
                                                                        self.settings.horizontal_min_length)
             self.callback.update_current_page_state()
             yield self.detect_staff_lines(image_data)
-        self.callback.update_total_state()
+            self.callback.update_total_state()
 
     def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
 
@@ -134,7 +134,7 @@ class LineDetection(LineDetector):
                 ax[2].imshow(data[i].horizontal_runs_img)
                 plt.show()
             yield self.detect_staff_lines(data[i])
-        self.callback.update_total_state()
+            self.callback.update_total_state()
 
     def detect_staff_lines(self, image_data: ImageData) -> List[List[List[List[int]]]]:
         img = image_data.horizontal_runs_img
