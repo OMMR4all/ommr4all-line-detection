@@ -17,7 +17,7 @@ def get_text_borders(image: np.ndarray, preprocess: bool = False, min_dist: int 
     return text_borders
 
 
-def vertical_runs(img: np.array):
+def vertical_runs(img: np.array) -> [int, int]:
     img = np.transpose(img)
     h = img.shape[0]
     w = img.shape[1]
@@ -61,7 +61,7 @@ def vertical_runs(img: np.array):
     return white_r, black_r
 
 
-def angle_difference_of_points(p1: Point, p2: Point):
+def angle_difference_of_points(p1: Point, p2: Point) -> float:
     v1 = np.array([p1.x, p1.y])
     v2 = np.array([p2.x, p2.y])
 
@@ -94,7 +94,7 @@ def simplify_anchor_points(line: Line, max_distance: int = 25, min_distance: int
 
 
 def best_line_fit(img: np.array, line: Line, line_thickness: int = 3, max_iterations: int = 30,
-                  scale: float = 1.0, skip_startend_points: bool = False):
+                  scale: float = 1.0, skip_startend_points: bool = False) -> Line:
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.__copy__()
     change = True
@@ -110,15 +110,15 @@ def best_line_fit(img: np.array, line: Line, line_thickness: int = 3, max_iterat
             y, x = point.y, point.x
             for i in range(1, line_thickness * np.ceil(scale).astype(int)):
                 test_line = best_line.__copy__()
-                test_line[point_ind] = Point(x, y + i)#[y + i, x]
+                test_line[point_ind] = Point(x, y + i)
                 blackness = get_blackness_of_line(test_line, img)
 
                 if blackness < current_blackness:
                     change = True
                     current_blackness = blackness
-                    best_line[point_ind] = Point(x, y + i)# [y + i, x]
+                    best_line[point_ind] = Point(x, y + i)
 
-                test_line[point_ind] = Point(x, y - i) # [y - i, x]
+                test_line[point_ind] = Point(x, y - i)
                 blackness = get_blackness_of_line(test_line, img)
 
                 if blackness < current_blackness:
@@ -130,7 +130,7 @@ def best_line_fit(img: np.array, line: Line, line_thickness: int = 3, max_iterat
     return best_line
 
 
-def get_blackness_of_line(line: Line, image: np.ndarray):
+def get_blackness_of_line(line: Line, image: np.ndarray) -> int:
     x_list, y_list = line.get_xy()
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = int(x_list[0]), int(x_list[-1])
@@ -138,8 +138,6 @@ def get_blackness_of_line(line: Line, image: np.ndarray):
     y_new = func(x_list_new)
     y_new_int = np.floor(y_new + 0.5).astype(int)
     indexes = (np.array(y_new_int), np.array(x_list_new))
-    #print(image.shape)
-    #print(indexes)
     blackness = np.mean(image[indexes])
     return blackness
 
@@ -184,10 +182,6 @@ def calculate_horizontal_runs(img: np.array, min_length: int):
     return np_matrix
 
 
-#def scale_line(line: Line, factor: float):
-#    return [[point[0] * factor, point[1] * factor] for point in line]
-
-
 if __name__ == "__main__":
     from PIL import Image
     from matplotlib import pyplot as plt
@@ -195,6 +189,9 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     page_path = os.path.join(project_dir, 'demo/images/test/line_test_image.jpg')
+
+    def scale_line(line: Line, factor: float):
+        return [[point[0] * factor, point[1] * factor] for point in line]
 
     factor_t = 4.0
     image_t = np.array(Image.open(page_path))
@@ -209,7 +206,6 @@ if __name__ == "__main__":
     y_p = line_a[:, 0]
     x_p = line_a[:, 1]
 
-    #y_p, x_p = zip(*line_t)
     yc, ax = plt.subplots(1, 2, True, True)
     ax[0].imshow(image_t, cmap="gray", extent=extent)
     ax[0].plot(x_p, y_p,)

@@ -3,6 +3,7 @@ from typing import List
 import numpy as np
 import copy
 
+
 @dataclass
 class Point:
     x: float

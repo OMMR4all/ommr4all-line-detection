@@ -52,7 +52,7 @@ class LineDetection(LineDetector):
 
         return self.detect(list(map(read_img, image_paths)))
 
-    def detect(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
+    def detect(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
         """
         Function  to detect die stafflines in an image
 
@@ -88,7 +88,7 @@ class LineDetection(LineDetector):
         else:
             return self.detect_fcn(images)
 
-    def detect_morphological(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
+    def detect_morphological(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
 
         for img in images:
             self.callback.reset_page_state()
@@ -114,7 +114,7 @@ class LineDetection(LineDetector):
             yield self.detect_staff_lines(image_data)
         self.callback.update_total_state()
 
-    def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[int]]], None, None]:
+    def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
 
         create_data_partial = partial(create_data, line_space_height=self.settings.line_space_height)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
@@ -136,7 +136,7 @@ class LineDetection(LineDetector):
             yield self.detect_staff_lines(data[i])
         self.callback.update_total_state()
 
-    def detect_staff_lines(self, image_data: ImageData):
+    def detect_staff_lines(self, image_data: ImageData) -> List[List[List[List[int]]]]:
         img = image_data.horizontal_runs_img
 
         binary_image = image_data.binary_image

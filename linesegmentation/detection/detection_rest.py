@@ -37,13 +37,13 @@ class LineDetectionRest(LineDetector):
         else:
             self.callback: LineDetectionCallback = callback
 
-    def detect_paths(self, image_paths: List[str]) -> Generator[List[List[List[int]]], None, None]:
+    def detect_paths(self, image_paths: List[str]) -> Generator[List[List[List[List[int]]]], None, None]:
         def read_img(path):
             return np.array(Image.open(path))
 
         return self.detect_advanced(list(map(read_img, image_paths)))
 
-    def detect_advanced(self, images: List[np.ndarray]):
+    def detect_advanced(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
         create_data_partial = partial(create_data, line_space_height=self.settings.line_space_height)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
@@ -100,7 +100,7 @@ class LineDetectionRest(LineDetector):
                 self.callback.update_total_state()
 
     def organize_lines_in_systems(self, line_list: List[System], staff_space_height: int,
-                                  staff_line_height: int, text_height: int):
+                                  staff_line_height: int, text_height: int) -> List[System]:
         mean_line_height_list = [line.get_average_line_height() for line in line_list]
         staffindices = []
         prev_text_height = 0
@@ -127,7 +127,7 @@ class LineDetectionRest(LineDetector):
             staff_list.append(System(system_list))
         return staff_list
 
-    def detect_staff_lines_rest(self, image_data: ImageData, text_height: int):
+    def detect_staff_lines_rest(self, image_data: ImageData, text_height: int) -> List[List[List[List[int]]]]:
         img = image_data.horizontal_runs_img
         staff_line_height = image_data.staff_line_height
         staff_space_height = image_data.staff_space_height
