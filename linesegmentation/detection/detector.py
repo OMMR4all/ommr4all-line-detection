@@ -463,7 +463,7 @@ def remove_hill(y: List[int], smooth: int = 25) -> None:
                 break
 
 
-def interpolate_sequence(x_list: List[int], y_list: List[int]) -> [List[int, List[int]]]:
+def interpolate_sequence(x_list: List[int], y_list: List[int]) -> [List[int], List[int]]:
     x_list_new = range(x_list[0], x_list[-1])
     y_list_new = np.interp(x_list_new, x_list, y_list)
 
