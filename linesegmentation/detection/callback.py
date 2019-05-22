@@ -16,11 +16,8 @@ class LineDetectionCallback(ABC):
     def get_current_page_progress(self):
         return self.__page_state / self.__total_steps
 
-    def update_current_page_state(self, state=None):
-        if state is not None:
-            self.__page_state = 0
-        else:
-            self.__page_state += 1
+    def update_current_page_state(self):
+        self.__page_state += 1
         self.changed()
 
     def update_total_state(self):
@@ -28,11 +25,11 @@ class LineDetectionCallback(ABC):
         self.changed()
 
     def reset_page_state(self):
-        self.__state = 0
+        self.__page_state = 0
         self.changed()
 
     def reset_total_state(self):
-        self.__page_state = 0
+        self.__state = 0
         self.changed()
 
     @abstractmethod
