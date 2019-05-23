@@ -134,10 +134,12 @@ def get_blackness_of_line(line: Line, image: np.ndarray) -> int:
     x_list, y_list = line.get_xy()
     func = interpolate.interp1d(x_list, y_list)
     x_start, x_end = int(x_list[0]), int(x_list[-1])
-    x_list_new = np.arange(x_start, x_end)
+    x_list_new = np.arange(x_start, x_end-1)
     y_new = func(x_list_new)
+    y_new[y_new > image.shape[0] - 1] = image.shape[0] - 1
     y_new_int = np.floor(y_new + 0.5).astype(int)
     indexes = (np.array(y_new_int), np.array(x_list_new))
+
     blackness = np.mean(image[indexes])
     return blackness
 

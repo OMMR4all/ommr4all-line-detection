@@ -195,7 +195,7 @@ class LineDetection(LineDetector):
                                                  algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
                                                  ramer_dougler_dist=0.5)
 
-        staff_list = check_systems(staff_list, binary_image, threshold=self.settings.line_fit_distance)
+        #staff_list = check_systems(staff_list, binary_image, threshold=self.settings.line_fit_distance)
         self.callback.update_current_page_state()
         # Debug
         if self.settings.debug:
@@ -219,7 +219,7 @@ class LineDetection(LineDetector):
                 new_system = []
                 for line in system:
                     x, y = line.get_xy()
-                    new_line = zip(y, x)
+                    new_line = list(zip(y, x))
                     new_system.append(new_line)
                 staff_list_result.append(new_system)
             return staff_list_result
@@ -231,10 +231,10 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
-    setting_predictor = LineDetectionSettings(debug=True, model=model_line, post_process=1)
+    setting_predictor = LineDetectionSettings(debug=True, post_process=1)#, model=model_line)
     t_callback = DummyLineDetectionCallback(total_steps=7, total_pages=1)
     line_detector = LineDetection(setting_predictor, t_callback)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect_paths([page_path]):
+    for _pred in line_detector.detect_paths(["/home/alexander/PycharmProjects/ommr4all-server/storage/demo/pages/page00000004/gray_deskewed.jpg"]):
         pass

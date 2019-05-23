@@ -184,7 +184,7 @@ class LineDetector:
             for system_ind, system in enumerate(system_list):
                 if len(system) > self.settings.line_number:
                     intensity_of_line = {}
-                    for line_ind, line in enumerate(system.system):
+                    for line_ind, line in enumerate(system):
                         intensity_of_line[line_ind] = approximate_blackness_of_line(line, img)
                     if intensity_of_line:
                         prune = True
@@ -570,7 +570,7 @@ def create_data(image: np.ndarray, line_space_height: int) -> ImageData:
     norm_img = image.astype(np.float32) / 255
     staff_space_height = None
     staff_line_height = None
-    binary_image = gauss_threshold(image) / 255
+    binary_image = gauss_threshold(image.astype(np.uint8)) / 255
     if line_space_height == 0:
         staff_space_height, staff_line_height = vertical_runs(binary_image)
         space_height = staff_space_height + staff_line_height
