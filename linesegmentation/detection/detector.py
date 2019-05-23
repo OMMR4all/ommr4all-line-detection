@@ -138,12 +138,12 @@ class LineDetector:
                         del mean_line_height_list[line_ind]
                         break
                     if p2e.x >= p1e.x and p2a.x >= p1a.x:
-                        line_list_copy[line_ind - 1] = line_list_copy[line_ind - 1] + line_list_copy[line_ind]
+                        line_list_copy[line_ind - 1] = Line(line_list_copy[line_ind - 1] + line_list_copy[line_ind])
                         del line_list_copy[line_ind]
                         del mean_line_height_list[line_ind]
                         break
                     if p2e.x <= p1e.x and p1a.x >= p2e.x:
-                        line_list_copy[line_ind - 1] = line_list_copy[line_ind] + line_list_copy[line_ind - 1]
+                        line_list_copy[line_ind - 1] = Line(line_list_copy[line_ind] + line_list_copy[line_ind - 1])
                         del line_list_copy[line_ind]
                         del mean_line_height_list[line_ind]
                         break
