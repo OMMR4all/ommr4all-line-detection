@@ -566,14 +566,16 @@ def approximate_blackness_of_line(line: Line, image: np.ndarray) -> int:
 
 
 def create_data(image: np.ndarray, line_space_height: int) -> ImageData:
-    space_height = line_space_height
     norm_img = image.astype(np.float32) / 255
-    staff_space_height = None
-    staff_line_height = None
     binary_image = gauss_threshold(image.astype(np.uint8)) / 255
     if line_space_height == 0:
         staff_space_height, staff_line_height = vertical_runs(binary_image)
         space_height = staff_space_height + staff_line_height
+    else:
+        space_height = line_space_height
+        staff_line_height = max(1, int(np.round(0.2 * line_space_height)))
+        staff_space_height = space_height - staff_line_height
+
     image_data = ImageData(height=space_height, image=norm_img, staff_line_height=staff_line_height,
                            staff_space_height=staff_space_height, binary_image=binary_image)
     return image_data

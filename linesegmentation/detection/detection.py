@@ -115,10 +115,12 @@ class LineDetection(LineDetector):
             self.callback.update_total_state()
 
     def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
-
         create_data_partial = partial(create_data, line_space_height=self.settings.line_space_height)
-        with multiprocessing.Pool(processes=self.settings.processes) as p:
-            data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
+        if len(images) <= 1:
+            data = list(map(create_data_partial, images))
+        else:
+            with multiprocessing.Pool(processes=self.settings.processes) as p:
+                data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         for i, prob in enumerate(self.predictor.predict(data)):
             self.callback.reset_page_state()
             pred = (prob > self.settings.model_foreground_threshold)
