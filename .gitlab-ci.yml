@@ -16,4 +16,4 @@ test:
   tags:
   - development
   script:
-  - python manage.py test
+  - python linesegmentation/tests/tests.py
