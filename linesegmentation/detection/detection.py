@@ -229,6 +229,8 @@ class LineDetection(LineDetector):
             return staff_list
 
 
+
+
 if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -238,5 +240,5 @@ if __name__ == "__main__":
     line_detector = LineDetection(setting_predictor, t_callback)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect_paths(["/home/alexander/PycharmProjects/ommr4all-server/storage/demo/pages/page00000004/gray_deskewed.jpg"]):
+    for _pred in line_detector.detect_paths([page_path]):
         pass

@@ -405,7 +405,7 @@ class LineDetector:
                          , lt: int, scale: float = 2.0) -> List[System]:
 
         image_cp = gray_image  # + binary_image
-        scaled_image = resize_image(image_cp * 255, scale)
+        scaled_image = resize_image(image_cp, scale)
 
         staff_list = []
         for system in system_list:

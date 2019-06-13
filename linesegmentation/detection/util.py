@@ -97,8 +97,10 @@ def best_line_fit(img: np.array, line: Line, line_thickness: int = 3, max_iterat
                   scale: float = 1.0, skip_startend_points: bool = False) -> Line:
     current_blackness = get_blackness_of_line(line, img)
     best_line = line.__copy__()
+
     change = True
     iterations = 0
+
     while change:
         if iterations > max_iterations:
             break
@@ -108,23 +110,26 @@ def best_line_fit(img: np.array, line: Line, line_thickness: int = 3, max_iterat
                 if point_ind == 0 or point_ind == len(best_line):
                     continue
             y, x = point.y, point.x
-            for i in range(1, line_thickness * np.ceil(scale).astype(int)):
-                test_line = best_line.__copy__()
-                test_line[point_ind] = Point(x, y + i)
-                blackness = get_blackness_of_line(test_line, img)
+            scaled_line_thickness = line_thickness * np.ceil(scale).astype(int)
+            for i in range(1, scaled_line_thickness + 1):
+                if y + i < line[point_ind].y + scaled_line_thickness:
+                    test_line = best_line.__copy__()
+                    test_line[point_ind] = Point(x, y + i)
+                    blackness = get_blackness_of_line(test_line, img)
 
-                if blackness < current_blackness:
-                    change = True
-                    current_blackness = blackness
-                    best_line[point_ind] = Point(x, y + i)
+                    if blackness < current_blackness:
+                        change = True
+                        current_blackness = blackness
+                        best_line[point_ind] = Point(x, y + i)
+                if y - i > line[point_ind].y - scaled_line_thickness:
 
-                test_line[point_ind] = Point(x, y - i)
-                blackness = get_blackness_of_line(test_line, img)
+                    test_line[point_ind] = Point(x, y - i)
+                    blackness = get_blackness_of_line(test_line, img)
 
-                if blackness < current_blackness:
-                    change = True
-                    current_blackness = blackness
-                    best_line[point_ind] = Point(x, y - i)
+                    if blackness < current_blackness:
+                        change = True
+                        current_blackness = blackness
+                        best_line[point_ind] = Point(x, y - i)
 
         iterations += 1
     return best_line

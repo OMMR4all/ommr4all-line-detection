@@ -39,7 +39,7 @@ def normalize_connected_components(cc_list: List[List[int]]):
 
 
 def resize_image(image: np.ndarray, scale: float, order=3):
-    return rescale(image, scale, order=order)
+    return rescale(image, scale, preserve_range=True, order=order)
 
 
 def convert_2dpoint_to_1did(list: List[int], width: int):
