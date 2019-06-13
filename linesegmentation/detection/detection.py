@@ -229,8 +229,6 @@ class LineDetection(LineDetector):
             return staff_list
 
 
-
-
 if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
