@@ -91,7 +91,6 @@ class LineDetection(LineDetector):
     def detect_morphological(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
 
         for img in images:
-            self.callback.reset_page_state()
 
             image_data = ImageData()
             image_data.image = img.astype(float) / 255
@@ -107,14 +106,16 @@ class LineDetection(LineDetector):
             staffs = (binarized ^ morph)
             image_data.staff_space_height, image_data.staff_line_height = vertical_runs(binary)
             image_data.binary_image = binary
-            self.callback.update_current_page_state()
+            self.callback.update_total_state()
             image_data.horizontal_runs_img = calculate_horizontal_runs((1 - staffs),
                                                                        self.settings.horizontal_min_length)
-            self.callback.update_current_page_state()
+            self.callback.update_total_state()
             yield self.detect_staff_lines(image_data)
             self.callback.update_total_state()
+            self.callback.update_page_counter()
 
     def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
+        self.callback.set_total_pages(len(images))
         create_data_partial = partial(create_data, line_space_height=self.settings.line_space_height)
         if len(images) <= 1:
             data = list(map(create_data_partial, images))
@@ -122,15 +123,14 @@ class LineDetection(LineDetector):
             with multiprocessing.Pool(processes=self.settings.processes) as p:
                 data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         for i, prob in enumerate(self.predictor.predict(data)):
-            self.callback.reset_page_state()
             pred = (prob > self.settings.model_foreground_threshold)
-            self.callback.update_current_page_state()
+            self.callback.update_total_state()
             if data[i].staff_space_height is None or data[i].staff_line_height is None:
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(data[i].binary_image)
             data[i].horizontal_runs_img = calculate_horizontal_runs(1 - pred, self.settings.horizontal_min_length)
             data[i].pixel_classifier_prediction = prob
 
-            self.callback.update_current_page_state()
+            self.callback.update_total_state()
             if self.settings.debug_model:
                 f, ax = plt.subplots(1, 3, sharex='all', sharey='all')
                 ax[0].imshow(prob)
@@ -139,6 +139,7 @@ class LineDetection(LineDetector):
                 plt.show()
             yield self.detect_staff_lines(data[i])
             self.callback.update_total_state()
+            self.callback.update_page_counter()
 
     def detect_staff_lines(self, image_data: ImageData) -> List[List[List[List[int]]]]:
         img = image_data.horizontal_runs_img
@@ -151,7 +152,7 @@ class LineDetection(LineDetector):
 
         line_list = self.connect_connected_components_to_line(cc_list, staff_line_height, staff_space_height)
 
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
         # Remove lines which are shorter than 50px
         line_list = [l for l in line_list if l.get_end_point().x - l.get_start_point().x > 50]
 
@@ -166,13 +167,13 @@ class LineDetection(LineDetector):
         else:
             staff_list = [[System(x)] for x in line_list]
 
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
 
         if self.settings.post_process == PostProcess.FLAT:
             staff_list = self.post_process_staff_systems(staff_list, staff_line_height, binary_image)
             if self.settings.line_number > 1 and self.settings.line_interpolation:
                 staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
-            self.callback.update_current_page_state()
+            self.callback.update_total_state()
             if self.settings.smooth_lines != SmoothLines.OFF:
                 if self.settings.smooth_lines == SmoothLines.BASIC:
                     staff_list = self.smooth_lines(staff_list)
@@ -183,13 +184,13 @@ class LineDetection(LineDetector):
                     staff_list = polyline_simplification(staff_list,
                                                          algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
                                                          ramer_dougler_dist=self.settings.line_fit_distance)
-            self.callback.update_current_page_state()
+            self.callback.update_total_state()
 
         elif self.settings.post_process == PostProcess.BESTFIT:
 
             staff_list = polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
                                                  max_points_vw=self.settings.max_line_points)
-            self.callback.update_current_page_state()
+            self.callback.update_total_state()
 
             staff_list = self.best_fit_systems(staff_list,
                                                1 - image_data.pixel_classifier_prediction
@@ -198,14 +199,14 @@ class LineDetection(LineDetector):
                                                else image_data.image,
                                                image_data.binary_image, staff_line_height,
                                                self.settings.best_fit_scale)
-            self.callback.update_current_page_state()
+            self.callback.update_total_state()
 
             staff_list = polyline_simplification(staff_list,
                                                  algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
                                                  ramer_dougler_dist=0.5)
 
         #staff_list = check_systems(staff_list, binary_image, threshold=self.settings.line_fit_distance)
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
         # Debug
         if self.settings.debug:
             extent_b = (0, image_data.image.shape[1], image_data.image.shape[0], 0)
@@ -243,9 +244,9 @@ if __name__ == "__main__":
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/model')
     setting_predictor = LineDetectionSettings(debug=True, post_process=1, model=model_line)
 
-    t_callback = DummyLineDetectionCallback(total_steps=7, total_pages=1)
+    t_callback = DummyLineDetectionCallback(total_steps=8, total_pages=1)
     line_detector = LineDetection(setting_predictor, t_callback)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect_paths([page_path]):
+    for _pred in line_detector.detect_paths([page_path, page_path]):
         pass
