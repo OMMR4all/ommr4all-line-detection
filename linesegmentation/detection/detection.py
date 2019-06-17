@@ -128,6 +128,8 @@ class LineDetection(LineDetector):
             if data[i].staff_space_height is None or data[i].staff_line_height is None:
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(data[i].binary_image)
             data[i].horizontal_runs_img = calculate_horizontal_runs(1 - pred, self.settings.horizontal_min_length)
+            data[i].pixel_classifier_prediction = prob
+
             self.callback.update_current_page_state()
             if self.settings.debug_model:
                 f, ax = plt.subplots(1, 3, sharex='all', sharey='all')
@@ -189,7 +191,12 @@ class LineDetection(LineDetector):
                                                  max_points_vw=self.settings.max_line_points)
             self.callback.update_current_page_state()
 
-            staff_list = self.best_fit_systems(staff_list, image_data.image, image_data.binary_image, staff_line_height,
+            staff_list = self.best_fit_systems(staff_list,
+                                               1 - image_data.pixel_classifier_prediction
+                                               if image_data.pixel_classifier_prediction is not None and
+                                                  self.settings.use_prediction_to_fit
+                                               else image_data.image,
+                                               image_data.binary_image, staff_line_height,
                                                self.settings.best_fit_scale)
             self.callback.update_current_page_state()
 
@@ -229,13 +236,12 @@ class LineDetection(LineDetector):
             return staff_list
 
 
-
-
 if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best')
-    setting_predictor = LineDetectionSettings(debug=True, post_process=1)#, model=model_line)
+
+    model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/model')
+    setting_predictor = LineDetectionSettings(debug=True, post_process=1, model=model_line)
     t_callback = DummyLineDetectionCallback(total_steps=7, total_pages=1)
     line_detector = LineDetection(setting_predictor, t_callback)
 
