@@ -1,31 +1,35 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from multiprocessing import Process, Value, Lock
 
 
 class LineDetectionCallback(ABC):
     def __init__(self, steps_per_page=8, total_pages=1):
         super().__init__()
         self.__total_pages = total_pages
-        self.__state = 0
+        self.__state = Value('i', 0)
         self.__steps_per_page = steps_per_page
         self.__total_steps = steps_per_page * total_pages
-        self.__processed_pages = 0
+        self.__processed_pages = Value('i', 0)
+        self.__lock = Lock()
 
     def get_progress(self):
-        return self.__state / self.__total_steps
+        return self.__state.value / self.__total_steps
 
     def get_total_pages(self):
         return self.__total_pages
 
     def get_processed_pages(self):
-        return self.__processed_pages
+        return self.__processed_pages.value
 
     def update_total_state(self):
-        self.__state += 1
+        with self.__lock:
+            self.__state.value += 1
         self.changed()
 
     def update_page_counter(self):
-        self.__processed_pages += 1
+        with self.__lock:
+            self.__processed_pages.value += 1
         self.changed()
 
     def set_total_pages(self, value):

@@ -244,7 +244,7 @@ if __name__ == "__main__":
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/model')
     setting_predictor = LineDetectionSettings(debug=True, post_process=1, model=model_line)
 
-    t_callback = DummyLineDetectionCallback(total_steps=8, total_pages=1)
+    t_callback = DummyLineDetectionCallback(total_steps=8, total_pages=2)
     line_detector = LineDetection(setting_predictor, t_callback)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
