@@ -19,7 +19,7 @@ class TestStringMethods(unittest.TestCase):
         print(BASE_DIR)
 
         self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.model_line = os.path.join(self.project_dir, 'demo/models/line/marked_lines/best')
+        self.model_line = os.path.join(self.project_dir, 'demo/models/line/marked_lines/model')
         self.t_callback = DummyLineDetectionCallback(total_steps=7, total_pages=1)
 
     def test_line_001_no_model(self):
