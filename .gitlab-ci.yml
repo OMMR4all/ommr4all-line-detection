@@ -1,0 +1,21 @@
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+before_script:
+  - virtualenv -p python3.7 venv
+  - source venv/bin/activate
+  - pip install tensorflow
+  - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab2.informatik.uni-wuerzburg.de/chw71yx/page-segmentation.git
+  - cd page-segmentation && python setup.py install && cd ..
+  - pip install -r requirements.txt
+
+test:
+  tags:
+  - development
+  script:
+  - python linesegmentation/tests/tests.py
