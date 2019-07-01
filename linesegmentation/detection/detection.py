@@ -123,7 +123,8 @@ class LineDetection(LineDetector):
             with multiprocessing.Pool(processes=self.settings.processes) as p:
                 data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         for i, prob in enumerate(self.predictor.predict(data)):
-            pred = (prob > self.settings.model_foreground_threshold)
+            norm = prob / np.max(prob) if self.settings.model_foreground_normalize else prob
+            pred = (norm > self.settings.model_foreground_threshold)
             self.callback.update_total_state()
             if data[i].staff_space_height is None or data[i].staff_line_height is None:
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(data[i].binary_image)

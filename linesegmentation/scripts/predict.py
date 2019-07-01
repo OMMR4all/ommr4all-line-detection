@@ -77,5 +77,6 @@ def main():
     for i_ind, i in tqdm.tqdm(enumerate(lineDetector.detect_paths(gray_file_paths)),total = len(gray_file_paths)):
         pass
 
+
 if __name__ == "__main__":
     main()
