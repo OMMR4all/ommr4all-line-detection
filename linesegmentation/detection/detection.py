@@ -133,10 +133,11 @@ class LineDetection(LineDetector):
 
             self.callback.update_total_state()
             if self.settings.debug_model:
-                f, ax = plt.subplots(1, 3, sharex='all', sharey='all')
-                ax[0].imshow(prob)
-                ax[1].imshow(pred)
-                ax[2].imshow(data[i].horizontal_runs_img)
+                f, ax = plt.subplots(2, 3, sharex='all', sharey='all')
+                ax[0, 0].imshow(1-prob, cmap='gray')
+                ax[0, 1].imshow(1 - pred, cmap='gray')
+                ax[0, 2].imshow(255 - data[i].horizontal_runs_img, cmap='gray')
+                ax[1, 0].imshow(data[i].image, cmap='gray')
                 plt.show()
             yield self.detect_staff_lines(data[i])
             self.callback.update_total_state()
@@ -151,7 +152,22 @@ class LineDetection(LineDetector):
 
         cc_list = self.extract_ccs(img)
 
-        line_list = self.connect_connected_components_to_line(cc_list, staff_line_height, staff_space_height)
+        line_list = self.connect_connected_components_to_line(cc_list[:], staff_line_height, staff_space_height)
+
+        if self.settings.debug:
+            f, ax = plt.subplots(1, 3)
+            ax[0].imshow(np.zeros(image_data.image.shape, dtype=np.uint8) + 255, cmap='gray', vmin=0, vmax=1)
+            for line in cc_list:
+                x, y = Line(line).get_xy()
+                ax[0].plot(x, y, "k")
+
+            ax[1].imshow(np.zeros(image_data.image.shape, dtype=np.uint8) + 255, cmap='gray', vmin=0, vmax=1)
+            for line in line_list:
+                x, y = line.get_xy()
+                ax[1].plot(x, y, "k")
+
+            ax[2].imshow(255 - img, cmap='gray')
+            plt.show()
 
         self.callback.update_total_state()
         # Remove lines which are shorter than 50px
