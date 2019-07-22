@@ -123,6 +123,7 @@ class LineDetection(LineDetector):
             with multiprocessing.Pool(processes=self.settings.processes) as p:
                 data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         for i, prob in enumerate(self.predictor.predict(data)):
+            prob = prob[:, :, 1]
             norm = prob / np.max(prob) if self.settings.model_foreground_normalize else prob
             pred = (norm > self.settings.model_foreground_threshold)
             self.callback.update_total_state()
@@ -142,6 +143,7 @@ class LineDetection(LineDetector):
             yield self.detect_staff_lines(data[i])
             self.callback.update_total_state()
             self.callback.update_page_counter()
+            
 
     def detect_staff_lines(self, image_data: ImageData) -> List[List[List[List[int]]]]:
         img = image_data.horizontal_runs_img
@@ -259,7 +261,7 @@ if __name__ == "__main__":
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/model')
-    setting_predictor = LineDetectionSettings(debug=True, post_process=1, model=model_line)
+    setting_predictor = LineDetectionSettings(debug=False, post_process=1, model=model_line)
 
     t_callback = DummyLineDetectionCallback(total_steps=8, total_pages=2)
     line_detector = LineDetection(setting_predictor, t_callback)

@@ -19,7 +19,6 @@ class PCPredictor:
         )
         for i, pred in enumerate(self.predictor.predict(data)):
             # get the probability map for 'foreground' and resize it to the original shape
-            prob = pred.probabilities[:, :, 1]
-            pred = resize(prob, pred[2].original_shape)
+            pred = resize(pred.probabilities, pred[2].original_shape)
             yield pred
 

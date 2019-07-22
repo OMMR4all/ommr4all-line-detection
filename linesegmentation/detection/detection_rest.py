@@ -47,10 +47,10 @@ class LineDetectionRest(LineDetector):
         create_data_partial = partial(create_data, line_space_height=self.settings.line_space_height)
         with multiprocessing.Pool(processes=self.settings.processes) as p:
             data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
+        self.callback.set_total_pages(len(images))
 
         if self.text_predictor:
             for i, pred in enumerate(zip(self.predictor.predict(data), self.text_predictor.predict(data))):
-                self.callback.reset_page_state()
 
                 line_prediction = pred[0]
                 region_prediction = pred[1]
@@ -58,7 +58,7 @@ class LineDetectionRest(LineDetector):
                 line_prediction[line_prediction > 0] = 255
                 region_prediction[region_prediction < 255] = 0
                 line_prediction_pruned = line_prediction * region_prediction * 255
-                self.callback.update_current_page_state()
+                self.callback.update_total_state()
 
                 if self.settings.debug:
                     x, y = plt.subplots(1, 3, sharex=True, sharey=True)
@@ -66,38 +66,56 @@ class LineDetectionRest(LineDetector):
                     y[1].imshow(line_prediction)
                     y[2].imshow(line_prediction_pruned)
                     plt.show()
-                self.callback.update_current_page_state()
+                self.callback.update_total_state()
 
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - line_prediction_pruned)
-                self.callback.update_current_page_state()
+                self.callback.update_total_state()
 
                 data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (line_prediction_pruned / 255)),
                                                                         self.settings.horizontal_min_length)
-                self.callback.update_current_page_state()
+                self.callback.update_total_state()
                 yield self.detect_staff_lines_rest(data[i], get_text_borders(t_region - region_prediction))
                 self.callback.update_total_state()
-
+                self.callback.update_page_counter()
         else:
-            for i, pred in enumerate(self.predictor.predict(data)):
-                self.callback.reset_page_state()
+            for i, prob in enumerate(self.predictor.predict(data)):
+                background = prob[:, :, 0]
+                drawn_lines = prob[:, :, 1]
+                virtual_lines = prob[:, :, 2]
 
-                pred[pred > 0] = 255
-                self.callback.update_current_page_state()
+                #prob = pred.probabilities[:, :, 1]
+
+                norm_vl = virtual_lines / np.max(virtual_lines) if self.settings.model_foreground_normalize else virtual_lines
+                pred_vl = (norm_vl > self.settings.model_foreground_threshold)
+                norm_dl = drawn_lines / np.max(drawn_lines) if self.settings.model_foreground_normalize else drawn_lines
+                pred_dl = (norm_dl > self.settings.model_foreground_threshold)
+
+                pred = pred_dl + pred_vl
+                self.callback.update_total_state()
 
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(1 - pred)
-                self.callback.update_current_page_state()
-
-                data[i].horizontal_runs_img = calculate_horizontal_runs((1 - (pred / 255)),
+                print(vertical_runs(1 - pred))
+                self.callback.update_total_state()
+                data[i].horizontal_runs_img = calculate_horizontal_runs((1 - pred),
                                                                         self.settings.horizontal_min_length)
-                self.callback.update_current_page_state()
+                plt.imshow(data[i].horizontal_runs_img)
+                plt.show()
+                self.callback.update_total_state()
 
-                data[i].image = np.array(Image.open(data[i].path)) / 255
+                data[i].image = images[i] / 255
                 binary = np.array(binarize(data[i].image), dtype='uint8')
                 text_borders = get_text_borders((1 - binary)*255, preprocess=True)
-                self.callback.update_current_page_state()
-
+                self.callback.update_total_state()
+                if self.settings.debug_model:
+                    f, ax = plt.subplots(2, 3, sharex='all', sharey='all')
+                    ax[0, 0].imshow(1 - prob, cmap='gray')
+                    ax[0, 1].imshow(1 - pred, cmap='gray')
+                    ax[0, 2].imshow(255 - data[i].horizontal_runs_img, cmap='gray')
+                    ax[1, 0].imshow(data[i].image, cmap='gray')
+                    plt.show()
                 yield self.detect_staff_lines_rest(data[i], text_borders)
                 self.callback.update_total_state()
+                self.callback.update_page_counter()
 
     def organize_lines_in_systems(self, line_list: List[System], staff_space_height: int,
                                   staff_line_height: int, text_height: int) -> List[System]:
@@ -119,11 +137,12 @@ class LineDetectionRest(LineDetector):
                 staffindices.append(system)
             prev_text_height = th
         staffindices = [staff for staff in staffindices if len(staff) >= self.settings.min_lines_per_system]
+        print(staffindices)
         staff_list = []
         for z in staffindices:
             system_list = []
-            for x in z:
-                system.append(line_list[x])
+            for xt in z:
+                system_list.append(line_list[xt])
             staff_list.append(System(system_list))
         return staff_list
 
@@ -133,16 +152,16 @@ class LineDetectionRest(LineDetector):
         staff_space_height = image_data.staff_space_height
 
         cc_list = self.extract_ccs(img)
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
 
         line_list = self.connect_connected_components_to_line(cc_list, staff_line_height, staff_space_height)
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
 
         # Remove lines which are shorter than 50px
-        line_list = [l for l in line_list if l[-1][1] - l[0][1] > 50]
+        line_list = [l for l in line_list if l.get_end_point().x - l.get_start_point().x > 50]
 
         line_list = self.prune_small_lines(line_list, staff_space_height)
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
 
         if self.settings.line_number > 1:
             staff_list = self.organize_lines_in_systems(line_list, staff_space_height, staff_line_height, text_height)
@@ -152,18 +171,18 @@ class LineDetectionRest(LineDetector):
 
         else:
             staff_list = [[x] for x in line_list]
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
 
         if self.settings.smooth_lines != 0:
             if self.settings.smooth_lines == 1:
                 staff_list = self.smooth_lines(staff_list)
             if self.settings.smooth_lines == 2:
                 staff_list = self.smooth_lines_advanced(staff_list)
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
 
         staff_list = polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
                                              ramer_dougler_dist=self.settings.line_fit_distance)
-        self.callback.update_current_page_state()
+        self.callback.update_total_state()
 
         # Debug
         if self.settings.debug:
@@ -187,11 +206,11 @@ if __name__ == "__main__":
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-427.nrm.png')
     model_line = os.path.join(project_dir, 'demo/models/line/virtual_lines/model')
     model_region = os.path.join(project_dir, 'demo/models/region/model')
-    settings_prediction = LineDetectionSettings(debug=True, min_lines_per_system=3, line_number=4, line_space_height=20,
-                                                target_line_space_height=10, smooth_lines=2, line_fit_distance=1.0,
+    settings_prediction = LineDetectionSettings(debug=True, min_lines_per_system=3, line_number=5, line_space_height=20,
+                                                target_line_space_height=10, line_fit_distance=1.0, debug_model=True,
                                                 model=model_line)
     t_callback = DummyLineDetectionCallback(total_steps=10, total_pages=1)
-    line_detector = LineDetectionRest(settings_prediction, text_model=model_region, callback=t_callback)
+    line_detector = LineDetectionRest(settings_prediction, callback=t_callback)
 
     for _pred in line_detector.detect_paths([page_path]):
         pass

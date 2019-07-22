@@ -74,7 +74,7 @@ def main():
 
     )
     lineDetector = LineDetection(settings)
-    for i_ind, i in tqdm.tqdm(enumerate(lineDetector.detect_paths(gray_file_paths)),total = len(gray_file_paths)):
+    for i_ind, i in tqdm.tqdm(enumerate(lineDetector.detect_paths(gray_file_paths)), total = len(gray_file_paths)):
         pass
 
 
