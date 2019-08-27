@@ -43,10 +43,11 @@ class LineDetector:
         self.predictor = None
         if settings.model:
             pcsettings = PredictSettings(
-                mode='meta',
                 network=os.path.abspath(settings.model),
                 output=None,
-                high_res_output=False
+                high_res_output=False,
+                n_classes=2,
+                color_map={}
             )
             self.predictor = PCPredictor(pcsettings, settings.target_line_space_height)
 

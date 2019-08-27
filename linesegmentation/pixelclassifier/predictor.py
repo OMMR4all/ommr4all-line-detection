@@ -13,7 +13,7 @@ class PCPredictor:
         self.predictor = Predictor(settings)
 
     def predict(self, images: List[ImageData]) -> Generator[np.array, None, None]:
-        dataset_loader = DatasetLoader(self.height, prediction=True)
+        dataset_loader = DatasetLoader(self.height, prediction=True, color_map={})
         data = dataset_loader.load_data(
             [SingleData(binary=i.image * 255, image=i.image * 255, line_height_px=i.height) for i in images]
         )

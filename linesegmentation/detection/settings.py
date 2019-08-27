@@ -40,7 +40,7 @@ class LineDetectionSettings(NamedTuple):
     line_fit_distance: float = 0.5
     model: Optional[str] = None
     model_foreground_threshold: float = 0.5
-    model_foreground_normalize: bool = True
+    model_foreground_normalize: bool = False
 
     system_threshold: float = 1.0
     debug_model: bool = False

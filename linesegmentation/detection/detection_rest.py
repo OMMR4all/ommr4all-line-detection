@@ -51,7 +51,6 @@ class LineDetectionRest(LineDetector):
 
         if self.text_predictor:
             for i, pred in enumerate(zip(self.predictor.predict(data), self.text_predictor.predict(data))):
-
                 line_prediction = pred[0]
                 region_prediction = pred[1]
                 t_region = np.clip(pred[1], 0, 1) * 255
@@ -85,7 +84,8 @@ class LineDetectionRest(LineDetector):
 
                 #prob = pred.probabilities[:, :, 1]
 
-                norm_vl = virtual_lines / np.max(virtual_lines) if self.settings.model_foreground_normalize else virtual_lines
+                norm_vl = virtual_lines / np.max(virtual_lines) if self.settings.model_foreground_normalize else\
+                    virtual_lines
                 pred_vl = (norm_vl > self.settings.model_foreground_threshold)
                 norm_dl = drawn_lines / np.max(drawn_lines) if self.settings.model_foreground_normalize else drawn_lines
                 pred_dl = (norm_dl > self.settings.model_foreground_threshold)
@@ -137,7 +137,6 @@ class LineDetectionRest(LineDetector):
                 staffindices.append(system)
             prev_text_height = th
         staffindices = [staff for staff in staffindices if len(staff) >= self.settings.min_lines_per_system]
-        print(staffindices)
         staff_list = []
         for z in staffindices:
             system_list = []

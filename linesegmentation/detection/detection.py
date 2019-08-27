@@ -260,8 +260,8 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/model')
-    setting_predictor = LineDetectionSettings(debug=False, post_process=1, model=model_line)
+    model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best_model.h5')
+    setting_predictor = LineDetectionSettings(debug=True, post_process=1, model=model_line, debug_model=True)
 
     t_callback = DummyLineDetectionCallback(total_steps=8, total_pages=2)
     line_detector = LineDetection(setting_predictor, t_callback)
