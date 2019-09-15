@@ -5,7 +5,7 @@ Line segmentation algorithms for the OMMR4all project, originally created by Ale
 ## Prerequisites
 Dependencies for the project are located in requirement.txt.<br />
 Major Dependencies are:
-* Pixel classifier (CWick: https://gitlab2.informatik.uni-wuerzburg.de/chw71yx/page-segmentation)
+* Pixel classifier (https://github.com/OMMR4all/ommr4all-page-segmentation)
 * numpy
 * tensorflow
 * scipy
@@ -15,12 +15,12 @@ Major Dependencies are:
 ## Installing
 
 This projects requires the pixel classifier of
-https://gitlab2.informatik.uni-wuerzburg.de/chw71yx/page-segmentation
+https://github.com/OMMR4all/ommr4all-page-segmentation
 to be installed locally.
- * Clone the page segmentation repository `git clone https://gitlab2.informatik.uni-wuerzburg.de/chw71yx/page-segmentation`
+ * Clone the page segmentation repository `git clone https://github.com/OMMR4all/ommr4all-page-segmentation`
  * (Optional but recommended) Activate your virtual environment 
    (adapt to your path): `source venv/bin/activate`
- * install page segmentation `cd page-segmentation && python setup.py install`
+ * install page segmentation `cd ommr4all-page-segmentation && python setup.py install`
  * the line detection is installed
  * install the specific requirements of line detection `cd ommr4all-line-detection && pip install -r requirements.txt`
 
