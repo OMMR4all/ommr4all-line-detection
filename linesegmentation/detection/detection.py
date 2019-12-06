@@ -3,6 +3,8 @@ import multiprocessing
 import tqdm
 from functools import partial
 from typing import List, Generator
+
+from linesegmentation.detection.datatypes import AABB
 from linesegmentation.detection.detector import LineDetector, ImageData, create_data, \
     check_systems, polyline_simplification
 from linesegmentation.detection.util import vertical_runs, calculate_horizontal_runs
@@ -152,9 +154,36 @@ class LineDetection(LineDetector):
         staff_line_height = image_data.staff_line_height
         staff_space_height = image_data.staff_space_height
 
-        cc_list = self.extract_ccs(img)
+        def compute_aabb_with_bounds(line: Line) -> AABB:
+            aabb = line.aabb().copy()
+            aabb.expand(((staff_space_height + staff_line_height) * 2, 0))
+            return aabb
 
-        line_list = self.connect_connected_components_to_line(cc_list[:], staff_line_height, staff_space_height)
+        def remove_abandoned_ccs(ccs: List[Line]) -> List[Line]:
+            aabbs = list(map(compute_aabb_with_bounds, ccs))
+            return [cc for cc, aabb in zip(ccs, aabbs) if any(aabb.intersects(aabb2) for aabb2 in aabbs)]
+
+        def group_ccs_into_cols(ccs: List[Line]) -> List[List[Line]]:
+            columns = []
+            for cc in ccs:
+                left = cc.get_start_point().x
+                right = cc.get_end_point().x
+                matched_columns = [c for c in columns if c['left'] <= right and c['right'] >= left]
+                columns.append({
+                    'lines': sum([c['lines'] for c in matched_columns], []) + [cc],
+                    'left': min([c['left'] for c in matched_columns] + [left]),
+                    'right': max([c['right'] for c in matched_columns] + [right]),
+                })
+                for mc in matched_columns:
+                    columns.remove(mc)
+
+            return [c['lines'] for c in columns]
+
+        cc_list = self.extract_ccs(img)
+        cc_list = remove_abandoned_ccs(cc_list)
+        columns = group_ccs_into_cols(cc_list)
+
+        columns_line_list = [self.connect_connected_components_to_line(lines[:], staff_line_height, staff_space_height) for lines in columns]
 
         if self.settings.debug:
             f, ax = plt.subplots(1, 3)
@@ -164,7 +193,7 @@ class LineDetection(LineDetector):
                 ax[0].plot(x, y, "k")
 
             ax[1].imshow(np.zeros(image_data.image.shape, dtype=np.uint8) + 255, cmap='gray', vmin=0, vmax=1)
-            for line in line_list:
+            for line in sum(columns_line_list, []):
                 x, y = line.get_xy()
                 ax[1].plot(x, y, "k")
 
@@ -172,59 +201,68 @@ class LineDetection(LineDetector):
             plt.show()
 
         self.callback.update_total_state()
-        # Remove lines which are shorter than 50px
-        line_list = [l for l in line_list if l.get_end_point().x - l.get_start_point().x > 50]
 
-        line_list = self.prune_small_lines(line_list, staff_space_height)
-        if self.settings.line_number > 1:
-            staff_list = self.organize_lines_in_systems(line_list, staff_space_height, staff_line_height)
+        def prune_and_normalize(line_list: List[Line]):
+            line_list = self.prune_small_lines(line_list, staff_space_height)
+            if self.settings.line_number > 1:
+                staff_list = self.organize_lines_in_systems(line_list, staff_space_height, staff_line_height)
 
-            staff_list = self.prune_lines_in_system_with_lowest_intensity(staff_list, img)
-            if self.settings.line_interpolation:
-                staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
+                staff_list = self.prune_lines_in_system_with_lowest_intensity(staff_list, img)
+                if self.settings.line_interpolation:
+                    staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
 
-        else:
-            staff_list = [[System(x)] for x in line_list]
+            else:
+                staff_list = [[System(x)] for x in line_list]
+
+            return staff_list
+
+        columns_staff_list = list(map(prune_and_normalize, columns_line_list))
 
         self.callback.update_total_state()
 
-        if self.settings.post_process == PostProcess.FLAT:
-            staff_list = self.post_process_staff_systems(staff_list, staff_line_height, binary_image)
-            if self.settings.line_number > 1 and self.settings.line_interpolation:
-                staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
-            self.callback.update_total_state()
-            if self.settings.smooth_lines != SmoothLines.OFF:
-                if self.settings.smooth_lines == SmoothLines.BASIC:
-                    staff_list = self.smooth_lines(staff_list)
-                if self.settings.smooth_lines == SmoothLines.ADVANCE:
-                    staff_list = self.smooth_lines_advanced(staff_list)
+        def post_process_staves(staff_list):
+            if self.settings.post_process == PostProcess.FLAT:
+                staff_list = self.post_process_staff_systems(staff_list, staff_line_height, binary_image)
+                if self.settings.line_number > 1 and self.settings.line_interpolation:
+                    staff_list = self.normalize_lines_in_system(staff_list, staff_space_height, img)
+                self.callback.update_total_state()
+                if self.settings.smooth_lines != SmoothLines.OFF:
+                    if self.settings.smooth_lines == SmoothLines.BASIC:
+                        staff_list = self.smooth_lines(staff_list)
+                    if self.settings.smooth_lines == SmoothLines.ADVANCE:
+                        staff_list = self.smooth_lines_advanced(staff_list)
 
-                if self.settings.line_fit_distance > 0:
-                    staff_list = polyline_simplification(staff_list,
-                                                         algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
-                                                         ramer_dougler_dist=self.settings.line_fit_distance)
-            self.callback.update_total_state()
+                    if self.settings.line_fit_distance > 0:
+                        staff_list = polyline_simplification(staff_list,
+                                                             algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
+                                                             ramer_dougler_dist=self.settings.line_fit_distance)
+                self.callback.update_total_state()
 
-        elif self.settings.post_process == PostProcess.BESTFIT:
+            elif self.settings.post_process == PostProcess.BESTFIT:
 
-            staff_list = polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
-                                                 max_points_vw=self.settings.max_line_points)
-            self.callback.update_total_state()
+                staff_list = polyline_simplification(staff_list, algorithm=LineSimplificationAlgorithm.VISVALINGAM_WHYATT,
+                                                     max_points_vw=self.settings.max_line_points)
+                self.callback.update_total_state()
 
-            staff_list = self.best_fit_systems(staff_list,
-                                               1 - image_data.pixel_classifier_prediction
-                                               if image_data.pixel_classifier_prediction is not None and
-                                                  self.settings.use_prediction_to_fit
-                                               else image_data.image,
-                                               image_data.binary_image, staff_line_height,
-                                               self.settings.best_fit_scale)
-            self.callback.update_total_state()
+                staff_list = self.best_fit_systems(staff_list,
+                                                   1 - image_data.pixel_classifier_prediction
+                                                   if image_data.pixel_classifier_prediction is not None and
+                                                      self.settings.use_prediction_to_fit
+                                                   else image_data.image,
+                                                   image_data.binary_image, staff_line_height,
+                                                   self.settings.best_fit_scale)
+                self.callback.update_total_state()
 
-            staff_list = polyline_simplification(staff_list,
-                                                 algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
-                                                 ramer_dougler_dist=0.5)
+                staff_list = polyline_simplification(staff_list,
+                                                     algorithm=LineSimplificationAlgorithm.RAMER_DOUGLER_PEUCKLER,
+                                                     ramer_dougler_dist=0.5)
+
+            return staff_list
 
         #staff_list = check_systems(staff_list, binary_image, threshold=self.settings.line_fit_distance)
+        columns_staff_list = [post_process_staves(sl) for sl in columns_staff_list]
+        staff_list = sum(columns_staff_list, [])
+
         self.callback.update_total_state()
         # Debug
         if self.settings.debug:

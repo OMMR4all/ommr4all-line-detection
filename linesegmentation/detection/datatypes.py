@@ -3,6 +3,31 @@ from typing import List
 import numpy as np
 import copy
 
+@dataclass
+class AABB:
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+
+    def h(self):
+        return self.y2 - self.y1
+
+    def w(self):
+        return self.x2 - self.x1
+
+    def intersects(self, other: 'AABB') -> bool:
+        return not (other.x1 > self.x2 or other.x2 < self.x1 or other.y1 > self.y2 or other.y2 < self.y1)
+
+    def expand(self, value):
+        x, y = value
+        self.x1 -= x
+        self.y1 -= y
+        self.x2 += x
+        self.y2 += y
+
+    def copy(self) -> 'AABB':
+        return copy.copy(self)
 
 @dataclass
 class Point:
@@ -13,6 +38,16 @@ class Point:
 class Line:
     def __init__(self, line: List[Point]):
         self.line: List[Point] = line
+        self._aabb: AABB = None
+
+    def aabb(self) -> AABB:
+        if not self._aabb:
+            x1 = min([p.x for p in self.line])
+            y1 = min([p.y for p in self.line])
+            x2 = max([p.x for p in self.line])
+            y2 = max([p.y for p in self.line])
+            self._aabb = AABB(x1, y1, x2, y2)
+        return self._aabb
 
     def get_start_point(self):
         return self.line[0]

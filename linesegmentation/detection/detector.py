@@ -52,7 +52,7 @@ class LineDetector:
             self.predictor = PCPredictor(pcsettings, settings.target_line_space_height)
 
     @staticmethod
-    def extract_ccs(img: np.ndarray) -> List[List[Point]]:
+    def extract_ccs(img: np.ndarray) -> List[Line]:
         cc_list = extract_connected_components(img)
         cc_list = normalize_connected_components(cc_list)
         cc_list_new = []
@@ -60,43 +60,43 @@ class LineDetector:
             cc_new = []
             for y, x in cc:
                 cc_new.append(Point(x, y))
-            cc_list_new.append(cc_new)
+            cc_list_new.append(Line(cc_new))
         return cc_list_new
 
     @staticmethod
-    def connect_connected_components_to_line(cc_list: List[List[Point]], staff_line_height: int,
+    def connect_connected_components_to_line(cc_list: List[Line], staff_line_height: int,
                                              staff_space_height: int) -> List[Line]:
 
-        def connect_cc(cc_list: List[List[List[int]]]):
-            def prune_cc(cc_list: List[List[Point]], length: int):
+        def connect_cc(cc_list: List[Line]) -> List[Line]:
+            def prune_cc(cc_list: List[Line], length: int) -> List[Line]:
                 pruned_cc_list = []
                 for cc in cc_list:
-                    if abs(cc[0].x - cc[-1].x) > length:
+                    if abs(cc.get_start_point().x - cc.get_end_point().x) > length:
                         pruned_cc_list.append(cc)
                 return pruned_cc_list
 
-            def connect(max_dists: List[int], vert_dist: int, cc_list: List[List[Point]]):
+            def connect(max_dists: List[int], vert_dist: int, cc_list: List[Line]) -> List[Line]:
                 for max_dist in max_dists:
                     i = 0
                     while i < len(cc_list):
-                        l1 = cc_list[i]
+                        l1 = cc_list[i].line
                         p1_b = l1[0]
                         p1_e = l1[-1]
 
                         found = False
                         for i2 in range(i + 1, len(cc_list)):
-                            l2 = cc_list[i2]
+                            l2 = cc_list[i2].line
                             p2_b = l2[0]
                             p2_e = l2[-1]
                             if p1_e.x < p2_b.x and p2_b.x - p1_e.x < max_dist:
                                 if np.abs(p1_e.y - p2_b.y) < vert_dist:
-                                    cc_list[i] = l1 + l2
+                                    cc_list[i].line = l1 + l2
                                     del cc_list[i2]
                                     found = True
                                     break
                             elif p2_e.x < p1_b.x and p1_b.x - p2_e.x < max_dist:
                                 if np.abs(p1_b.y - p2_e.y) < vert_dist:
-                                    cc_list[i] = l2 + l1
+                                    cc_list[i].line = l2 + l1
                                     del cc_list[i2]
                                     found = True
                                     break
@@ -115,11 +115,11 @@ class LineDetector:
             return cc_list_copy
 
         llc = connect_cc(cc_list)
-        lines = [Line(points) for points in llc]
-        return lines
+        return llc
 
     @staticmethod
     def prune_small_lines(line_list: List[Line], staff_space_height: int) -> List[Line]:
+        line_list = [l for l in line_list if l.get_end_point().x - l.get_start_point().x > staff_space_height * 3]
         mean_line_height_list = [line.get_average_line_height() for line in line_list]
         line_list_copy = line_list.copy()
         while True:
