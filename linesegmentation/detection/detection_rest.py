@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from linesegmentation.detection.detector import LineDetector, LineDetectionSettings, create_data, ImageData,\
     LineSimplificationAlgorithm, polyline_simplification
 from linesegmentation.detection.util import get_text_borders, vertical_runs, calculate_horizontal_runs
-from pagesegmentation.lib.predictor import PredictSettings
+from ocr4all_pixel_classifier.lib.predictor import PredictSettings
 from linesegmentation.pixelclassifier.predictor import PCPredictor
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.util import extract_connected_components, \

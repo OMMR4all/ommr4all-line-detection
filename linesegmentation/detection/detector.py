@@ -4,7 +4,7 @@ from typing import List, Optional, NamedTuple, Tuple
 import numpy as np
 import math
 # project specific imports
-from pagesegmentation.lib.predictor import PredictSettings
+from ocr4all_pixel_classifier.lib.predictor import PredictSettings
 from scipy.interpolate import interpolate
 from linesegmentation.pixelclassifier.predictor import PCPredictor
 from linesegmentation.detection.util import vertical_runs, best_line_fit, get_blackness_of_line,\
