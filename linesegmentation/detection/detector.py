@@ -155,27 +155,25 @@ class LineDetector:
 
     def organize_lines_in_systems(self, line_list: List[Line], staff_space_height: int,
                                   staff_line_height: int) -> List[System]:
-        # Calculate medium height of all staffs
-        mean_line_height_list = [line.get_average_line_height() for line in line_list]
-        staff_indices = []
-        for i, medium_y in enumerate(mean_line_height_list):
-            system = []
-            if i in sum(staff_indices, []):
-                continue
-            height = medium_y
-            for z, center_ys in enumerate(mean_line_height_list):
-                if np.abs(height - center_ys) < 1.3 * (staff_space_height + staff_line_height):
-                    system.append(z)
-                    height = center_ys
-            staff_indices.append(system)
-        staffindices = [staff for staff in staff_indices if len(staff) >= self.settings.min_lines_per_system]
-        staff_list = []
-        for z in staffindices:
-            system_list = []
-            for xt in z:
-                system_list.append(line_list[xt])
-            staff_list.append(System(system_list))
-        return staff_list
+        if len(line_list) == 0:
+            return []
+
+        # sort lines
+        line_list.sort(key=lambda l: l.get_average_line_height())
+
+        # check if to successive lines have a distance smaller 1.3 d_sl, then connect them to a system,
+        # else start a new one
+        threshold = 1.3 * (staff_line_height + staff_space_height)
+        systems: List[System] = [
+            System([line_list[0]])
+        ]
+        for line_top, line_bot in zip(line_list, line_list[1:]):
+            if np.abs(line_top.get_average_line_height() - line_bot.get_average_line_height()) < threshold:
+                systems[-1].system.append(line_bot)
+            else:
+                systems.append(System([line_bot]))
+
+        return [system for system in systems if len(system.system) >= self.settings.min_lines_per_system]
 
     def prune_lines_in_system_with_lowest_intensity(self, system_list: List[System], img: np.ndarray) -> List[System]:
         # Remove the lines with the lowest blackness value in each system, so that len(staffs) <= numLine
