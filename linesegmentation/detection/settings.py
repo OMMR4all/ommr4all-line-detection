@@ -39,6 +39,7 @@ class LineDetectionSettings(NamedTuple):
     smooth_lines_adv_debug: bool = False
     line_fit_distance: float = 0.5
     model: Optional[str] = None
+    model_use_argmax: bool = False
     model_foreground_threshold: float = 0.5
     model_foreground_normalize: bool = False
 

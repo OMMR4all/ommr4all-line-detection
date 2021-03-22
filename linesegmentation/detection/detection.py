@@ -125,9 +125,13 @@ class LineDetection(LineDetector):
             with multiprocessing.Pool(processes=self.settings.processes) as p:
                 data = [v for v in tqdm.tqdm(p.imap(create_data_partial, images), total=len(images))]
         for i, prob in enumerate(self.predictor.predict(data)):
-            prob = prob[:, :, 1]
-            norm = prob / np.max(prob) if self.settings.model_foreground_normalize else prob
-            pred = (norm > self.settings.model_foreground_threshold)
+            prob = prob
+            if self.settings.model_use_argmax:
+                pred = np.argmax(prob, axis=-1)
+            else:
+                prob = prob[:, :, 1]
+                norm = prob / np.max(prob) if self.settings.model_foreground_normalize else prob
+                pred = (norm > self.settings.model_foreground_threshold)
             self.callback.update_total_state()
             if data[i].staff_space_height is None or data[i].staff_line_height is None:
                 data[i].staff_space_height, data[i].staff_line_height = vertical_runs(data[i].binary_image)
@@ -298,12 +302,12 @@ if __name__ == "__main__":
     import os
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    model_line = os.path.join(project_dir, 'demo/models/line/marked_lines/best_model.h5')
-    setting_predictor = LineDetectionSettings(debug=True, post_process=1, model=model_line, debug_model=True)
+    model_line = os.path.join(project_dir, '/home/alexanderh/models/datset/model.h5')
+    setting_predictor = LineDetectionSettings(debug=True, line_space_height=10,post_process=1, model=model_line, debug_model=True)
 
     t_callback = DummyLineDetectionCallback(total_steps=8, total_pages=2)
     line_detector = LineDetection(setting_predictor, t_callback)
 
     page_path = os.path.join(project_dir, 'demo/images/Graduel_de_leglise_de_Nevers-509.nrm.png')
-    for _pred in line_detector.detect_paths([page_path, page_path]):
+    for _pred in line_detector.detect_paths(['/tmp/35.png']):
         pass
