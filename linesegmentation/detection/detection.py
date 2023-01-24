@@ -116,6 +116,28 @@ class LineDetection(LineDetector):
             self.callback.update_total_state()
             self.callback.update_page_counter()
 
+    def detect_prob_map(self, image: np.ndarray, probability_map) -> List[List[List[List[int]]]]:
+        data = create_data(image, line_space_height=self.settings.line_space_height)
+        prob = probability_map
+        if self.settings.model_use_argmax:
+            pred = np.argmax(prob, axis=-1)
+        else:
+            prob = prob[:, :, 1]
+            norm = prob / np.max(prob) if self.settings.model_foreground_normalize else prob
+            pred = (norm > self.settings.model_foreground_threshold)
+        if data.staff_space_height is None or data.staff_line_height is None:
+            data.staff_space_height, data.staff_line_height = vertical_runs(data.binary_image)
+        data.horizontal_runs_img = calculate_horizontal_runs(1 - pred, self.settings.horizontal_min_length)
+        data.pixel_classifier_prediction = prob
+
+        if self.settings.debug_model:
+            f, ax = plt.subplots(2, 3, sharex='all', sharey='all')
+            ax[0, 0].imshow(1 - prob, cmap='gray')
+            ax[0, 1].imshow(1 - pred, cmap='gray')
+            ax[0, 2].imshow(255 - data.horizontal_runs_img, cmap='gray')
+            ax[1, 0].imshow(data.image, cmap='gray')
+            plt.show()
+        return self.detect_staff_lines(data)
     def detect_fcn(self, images: List[np.ndarray]) -> Generator[List[List[List[List[int]]]], None, None]:
         self.callback.set_total_pages(len(images))
         create_data_partial = partial(create_data, line_space_height=self.settings.line_space_height)
