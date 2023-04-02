@@ -4,9 +4,9 @@ from typing import List, Optional, NamedTuple, Tuple
 import numpy as np
 import math
 # project specific imports
-from ocr4all_pixel_classifier.lib.predictor import PredictSettings
+
+
 from scipy.interpolate import interpolate
-from linesegmentation.pixelclassifier.predictor import PCPredictor
 from linesegmentation.detection.util import vertical_runs, best_line_fit, get_blackness_of_line,\
     simplify_anchor_points
 from linesegmentation.datatypes.datatypes import ImageData
@@ -42,6 +42,8 @@ class LineDetector:
         self.settings = settings
         self.predictor = None
         if settings.model:
+            from ocr4all_pixel_classifier.lib.predictor import PredictSettings
+            from linesegmentation.pixelclassifier.predictor import PCPredictor
             pcsettings = PredictSettings(
                 network=os.path.abspath(settings.model),
                 output=None,

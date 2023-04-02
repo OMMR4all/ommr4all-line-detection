@@ -7,8 +7,7 @@ from matplotlib import pyplot as plt
 from linesegmentation.detection.detector import LineDetector, LineDetectionSettings, create_data, ImageData,\
     LineSimplificationAlgorithm, polyline_simplification
 from linesegmentation.detection.util import get_text_borders, vertical_runs, calculate_horizontal_runs
-from ocr4all_pixel_classifier.lib.predictor import PredictSettings
-from linesegmentation.pixelclassifier.predictor import PCPredictor
+
 from linesegmentation.preprocessing.binarization.ocropus_binarizer import binarize
 from linesegmentation.preprocessing.util import extract_connected_components, \
     normalize_connected_components
@@ -25,6 +24,8 @@ class LineDetectionRest(LineDetector):
         super().__init__(settings)
         self.text_predictor = None
         if text_model:
+            from ocr4all_pixel_classifier.lib.predictor import PredictSettings
+            from linesegmentation.pixelclassifier.predictor import PCPredictor
             pc_settings_text = PredictSettings(
                 mode='meta',
                 network=os.path.abspath(text_model),
