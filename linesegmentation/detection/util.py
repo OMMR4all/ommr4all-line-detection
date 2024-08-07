@@ -82,9 +82,9 @@ def simplify_anchor_points(line: Line, max_distance: int = 25, min_distance: int
             point_distance = distance(prev_point, point)
         else:
             point_distance = min_distance + 1
-        if point_distance > max_distance:
+        if prev_point is not None and point_distance > max_distance:
             new_line.append(Point(prev_point.x + (point.x - prev_point.x) / 2, point.y)) # [point[0], prev_point[1] + (point[1] - prev_point[1])/2])
-        if point_distance < min_distance:
+        elif prev_point is not None and point_distance < min_distance:
             if angle_difference_of_points(prev_point, point) > min_degree_to_keep_points or point_ind == len(line) - 1:
                 new_line.append(point)
         else:
