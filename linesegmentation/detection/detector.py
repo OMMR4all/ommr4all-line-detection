@@ -6,7 +6,7 @@ import math
 # project specific imports
 
 
-from scipy.interpolate import interpolate
+from scipy import interpolate
 from linesegmentation.detection.util import vertical_runs, best_line_fit, get_blackness_of_line,\
     simplify_anchor_points
 from linesegmentation.datatypes.datatypes import ImageData

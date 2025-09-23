@@ -2,7 +2,7 @@ import peakutils
 from scipy.signal import medfilt2d
 import numpy as np
 from itertools import tee
-from scipy.interpolate import interpolate
+from scipy import interpolate
 from numpy.linalg import norm
 from typing import List
 from linesegmentation.detection.datatypes import Line, Point, System

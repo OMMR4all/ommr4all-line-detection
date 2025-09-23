@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 from matplotlib import pyplot as plt
 # project specific imports
-from scipy.ndimage.morphology import binary_erosion, binary_dilation
+from scipy.ndimage import binary_erosion, binary_dilation
 
 from linesegmentation.detection.settings import LineDetectionSettings, \
     LineSimplificationAlgorithm, PostProcess, SmoothLines, OutPutType

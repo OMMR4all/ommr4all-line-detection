@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.interpolate import interpolate
+from scipy import interpolate
 import math
 from typing import List
 from linesegmentation.detection.datatypes import System, Line, Point
