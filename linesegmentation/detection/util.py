@@ -175,7 +175,7 @@ def calculate_horizontal_runs(img: np.array, min_length: int):
     h = img.shape[0]
     w = img.shape[1]
     np_matrix = np.zeros([h, w], dtype=np.uint8)
-    t = np.transpose(np.nonzero(np.diff(img) == -1))
+    t = np.transpose(np.nonzero(np.diff(img.astype(np.int16), axis=1) == -1))
     for trans in t:
         y, x = trans[0], trans[1] + 1
         xo = x

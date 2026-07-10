@@ -128,6 +128,7 @@ class LineDetection(LineDetector):
         if data.staff_space_height is None or data.staff_line_height is None:
             data.staff_space_height, data.staff_line_height = vertical_runs(data.binary_image)
         data.horizontal_runs_img = calculate_horizontal_runs(1 - pred, self.settings.horizontal_min_length)
+        print(f"DEBUG: horizontal_runs_img sum={data.horizontal_runs_img.sum()}, shape={data.horizontal_runs_img.shape}, pred true pixels={pred.sum()}, prob max={prob.max():.4f}, prob mean={prob.mean():.4f}, norm_threshold={self.settings.model_foreground_threshold}, normalize={self.settings.model_foreground_normalize}")
         data.pixel_classifier_prediction = prob
 
         if self.settings.debug_model:
